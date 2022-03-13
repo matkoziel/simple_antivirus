@@ -9,6 +9,6 @@
 
 std::string sha256(const std::string& str);
 
-unsigned char* sha256File(const char *fileName);
+std::string sha256File(const char *fileName);
 
 #endif //ANTYWIRUSCLION_CRYPTO_FUNCTIONS_H

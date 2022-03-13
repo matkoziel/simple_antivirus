@@ -18,4 +18,6 @@ std::vector<std::string> getAllFilesInDirectory(const std::string& path);
 
 std::vector<unsigned char> readFileBinary(const std::string& path);
 
+std::vector<std::string> readDatabase(const std::string& path);
+
 #endif //FILE_MANAGEMENT_H
