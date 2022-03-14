@@ -10,7 +10,7 @@
 #include <iomanip>
 #include <fstream>
 
-#define DEFAULT_INPUT_DATA_SIZE 10
+#define DEFAULT_INPUT_DATA_SIZE 1024*1024
 
 std::string sha256(const std::string& str) {
     unsigned char hash[SHA256_DIGEST_LENGTH];
@@ -25,10 +25,11 @@ std::string sha256(const std::string& str) {
     return ss.str();
 }
 
-unsigned char* sha256File(const char *fileName)
+std::string sha256File(const char *fileName)
 {
     unsigned char hash[SHA256_DIGEST_LENGTH];
     FILE *inputFile = fopen (fileName, "rb");
+    std::string result;
     if (!inputFile)
     {
         std::cerr << "Wystapił błąd, podany plik nie istnieje\n";
@@ -45,7 +46,11 @@ unsigned char* sha256File(const char *fileName)
         SHA256_Final(hash, &sha256);
         fclose(inputFile);
     }
-    return hash;
+    std::stringstream temp;
+    for (unsigned char hex : hash){
+        temp << std::hex << std::setw(2) << std::setfill('0') << (int) hex;
+    }
+    return temp.str();
 }
 
 

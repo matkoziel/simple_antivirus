@@ -32,7 +32,7 @@ std::vector<std::string> readDatabase(const std::string& path)
     std::ifstream inputFile(path,std::ios::out);
     if (!inputFile)
     {
-        std::cerr << "Wystapił błąd, podany plik nie istnieje\n";
+        std::cerr << "Error, cannot load database\n";
     }
     else
     {
@@ -51,7 +51,7 @@ std::vector<unsigned char> readFileBinary(const std::string& path)
     std::ifstream inputFile(path, std::ios::binary);
     if (!inputFile)
     {
-        std::cerr << "Wystapił błąd, podany plik nie istnieje\n";
+        std::cerr << "Error, file does not exist\n";
     }
     else
     {
@@ -60,7 +60,24 @@ std::vector<unsigned char> readFileBinary(const std::string& path)
     inputFile.close();
     return output;
 }
+bool moveFile(const std::string& from, const std::string& to)
+{
+    if(!std::filesystem::exists(from)) {
+        std::cerr << "No such file!\n";
+        return false;
+    }
+    else {
+        std::filesystem::rename(from,to);
+        if(!std::filesystem::exists(from)) return true;
+        else
+        {
+            std::cerr << "Failed moving file\n";
+            return false;
+        }
+    }
 
+
+}
 void appendToFile(const std::string& input, const std::string& path)
 {
     const char separator = '\n';

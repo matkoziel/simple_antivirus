@@ -20,4 +20,6 @@ std::vector<unsigned char> readFileBinary(const std::string& path);
 
 std::vector<std::string> readDatabase(const std::string& path);
 
+bool moveFile(const std::string& from, const std::string& to);
+
 #endif //FILE_MANAGEMENT_H
