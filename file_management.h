@@ -23,4 +23,7 @@ bool moveFile(const std::string& from, const std::string& to);
 
 std::unordered_set<std::string> readDatabaseToUnorderedSet(const std::string& path);
 
+bool findInUnorderedSet(const std::string& value, const std::unordered_set<std::string>& unorderedSet);
+
+
 #endif //FILE_MANAGEMENT_H

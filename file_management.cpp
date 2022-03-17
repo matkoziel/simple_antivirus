@@ -11,11 +11,15 @@
 #include <algorithm>
 #include <unordered_set>
 
+bool findInUnorderedSet(const std::string& value, const std::unordered_set<std::string>& unorderedSet) {
+    return unorderedSet.find(value) != unorderedSet.end();
+}
+
 std::string readFileToString(const std::string& path) {
     std::string output;
     std::ifstream inputFile(path);
     if (!inputFile) {
-        std::cerr << "Wystapił błąd, podany plik nie istnieje\n";
+//        std::cerr << "Wysta\n";
     }
     else {
         output.assign((std::istreambuf_iterator<char>(inputFile)),std::istreambuf_iterator<char>());
@@ -75,7 +79,7 @@ void appendToHashDatabase(const std::string& input, const std::string& path) {
     std::ofstream outputFile;
     outputFile.open(path, std::ios_base::app);
     if (!outputFile) {
-        std::cerr << "Wystapił błąd, podany plik nie istnieje\n";
+        std::cerr << "Cannot find database file!\n";
     }
     else {
         outputFile << input + separator;

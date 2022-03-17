@@ -29,7 +29,7 @@ std::string md5File(const char *fileName) {
     FILE *inputFile = fopen (fileName, "rb");
     std::string result;
     if (!inputFile) {
-        std::cerr << "Wystapił błąd, podany plik nie istnieje\n";
+//        std::cerr << "Wystapił błąd, podany plik nie istnieje\n";
     }
     else {
         int bytes;
