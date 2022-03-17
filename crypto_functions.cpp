@@ -4,46 +4,42 @@
 
 #include "crypto_functions.h"
 
-#include <openssl/sha.h>
+#include <openssl/md5.h>
 
 #include <iostream>
 #include <iomanip>
-#include <fstream>
 
-#define DEFAULT_INPUT_DATA_SIZE 1024*1024
+#define DEFAULT_INPUT_DATA_SIZE 1024
 
-std::string sha256(const std::string& str) {
-    unsigned char hash[SHA256_DIGEST_LENGTH];
-    SHA256_CTX sha256;
-    SHA256_Init(&sha256);
-    SHA256_Update(&sha256, str.c_str(), str.size());
-    SHA256_Final(hash, &sha256);
+std::string md5(const std::string& str) {
+    unsigned char hash[MD5_DIGEST_LENGTH];
+    MD5_CTX md5;
+    MD5_Init(&md5);
+    MD5_Update(&md5, str.c_str(), str.size());
+    MD5_Final(hash, &md5);
     std::stringstream ss;
-    for (unsigned char i: hash) {
-        ss << std::hex << std::setw(2) << std::setfill('0') << (int) i;
+    for (unsigned char hex: hash) {
+        ss << std::hex << std::setw(2) << std::setfill('0') << (int) hex;
     }
     return ss.str();
 }
 
-std::string sha256File(const char *fileName)
-{
-    unsigned char hash[SHA256_DIGEST_LENGTH];
+std::string md5File(const char *fileName) {
+    unsigned char hash[MD5_DIGEST_LENGTH];
     FILE *inputFile = fopen (fileName, "rb");
     std::string result;
-    if (!inputFile)
-    {
+    if (!inputFile) {
         std::cerr << "Wystapił błąd, podany plik nie istnieje\n";
     }
-    else
-    {
+    else {
         int bytes;
         unsigned char data[DEFAULT_INPUT_DATA_SIZE];
-        SHA256_CTX sha256;
-        SHA256_Init(&sha256);
+        MD5_CTX md5;
+        MD5_Init(&md5);
         while ((bytes = fread(data,1,DEFAULT_INPUT_DATA_SIZE,inputFile)) != 0) {
-            SHA256_Update(&sha256, data, bytes);
+            MD5_Update(&md5, data, bytes);
         }
-        SHA256_Final(hash, &sha256);
+        MD5_Final(hash, &md5);
         fclose(inputFile);
     }
     std::stringstream temp;
