@@ -7,7 +7,7 @@
 #include <cstring>
 #include <algorithm>
 
-#define DATABASE_PATH "/home/kozzi/CLionProjects/simple_antivirus/data/database.csv"
+#define DATABASE_PATH "/home/kozzi/CLionProjects/BSO/Antywirus_Mateusz_Koziel/data/database.csv"
 
 const static std::string quarantineDir = strcat(getenv("HOME"), "/.quarantine");
 
@@ -16,6 +16,7 @@ void moveAndRemovePermissions(const std::string& path) {
     fullPath.append(quarantineDir);
     fullPath.append("/");
     fullPath.append(std::filesystem::path(path).filename());
+    fullPath = renameFileToAvoidConflicts(fullPath);
     if(moveFile(path,fullPath)) {
         std::filesystem::permissions(fullPath,std::filesystem::perms::owner_read | std::filesystem::perms::owner_write |
                                               std::filesystem::perms::group_read | std::filesystem::perms::group_write |
@@ -75,3 +76,10 @@ int main() {
 
     return 0;
 }
+//TODO: Konflikt nazw w folderze kwarantanny
+//TODO: Linki, pliki specjalne
+//TODO:
+//TODO:
+//TODO:
+//TODO:
+//TODO:

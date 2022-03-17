@@ -15,11 +15,24 @@ bool findInUnorderedSet(const std::string& value, const std::unordered_set<std::
     return unorderedSet.find(value) != unorderedSet.end();
 }
 
+std::string renameFileToAvoidConflicts(const std::string& path) {
+    std::string temp = path;
+    if(std::filesystem::exists(temp)) {
+        int index = temp.find_last_of("_");
+        int newNumber = std::stoi(temp.substr(index+1,temp.size()));
+        temp = temp.substr(0,index+1).append(std::to_string(newNumber+1));
+    }
+    else {
+        temp = temp.append("_0");
+    }
+    return temp;
+}
+
 std::string readFileToString(const std::string& path) {
     std::string output;
     std::ifstream inputFile(path);
     if (!inputFile) {
-//        std::cerr << "Wysta\n";
+        std::cerr << "Error, cannot open file\n";
     }
     else {
         output.assign((std::istreambuf_iterator<char>(inputFile)),std::istreambuf_iterator<char>());
@@ -105,7 +118,8 @@ std::unordered_set<std::string> readDatabaseToUnorderedSet(const std::string& pa
 
 std::vector<std::string> getAllFilesInDirectory(const std::string& path) {
     std::vector<std::string> result;
-    for (const std::filesystem::path& dir : std::filesystem::recursive_directory_iterator(path)) {
+    for (const std::filesystem::path& dir : std::filesystem::recursive_directory_iterator(path,
+          std::filesystem::directory_options::follow_directory_symlink | std::filesystem::directory_options::skip_permission_denied)) {
         std::string path_string{dir.u8string()};
         result.push_back(path_string);
     }

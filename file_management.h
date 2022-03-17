@@ -25,5 +25,7 @@ std::unordered_set<std::string> readDatabaseToUnorderedSet(const std::string& pa
 
 bool findInUnorderedSet(const std::string& value, const std::unordered_set<std::string>& unorderedSet);
 
+std::string renameFileToAvoidConflicts(const std::string& path);
+
 
 #endif //FILE_MANAGEMENT_H
