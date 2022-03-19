@@ -17,13 +17,11 @@ bool findInUnorderedSet(const std::string& value, const std::unordered_set<std::
 
 std::string renameFileToAvoidConflicts(const std::string& path) {
     std::string temp = path;
-    if(std::filesystem::exists(temp)) {
+    temp.append("_0");
+    while(std::filesystem::exists(temp)) {
         int index = temp.find_last_of("_");
         int newNumber = std::stoi(temp.substr(index+1,temp.size()));
         temp = temp.substr(0,index+1).append(std::to_string(newNumber+1));
-    }
-    else {
-        temp = temp.append("_0");
     }
     return temp;
 }
@@ -72,7 +70,7 @@ std::vector<unsigned char> readFileBinary(const std::string& path) {
 
 bool moveFile(const std::string& from, const std::string& to) {
     if(!std::filesystem::exists(from)) {
-        std::cerr << "No such file!\n";
+        std::cerr << "No such file! : " << from << "\n";
         return false;
     }
     else {
@@ -81,7 +79,7 @@ bool moveFile(const std::string& from, const std::string& to) {
             return true;
         }
         else {
-            std::cerr << "Failed moving file\n";
+            std::cerr << "Error occurred, could not move file : " << from <<" to: " << to << "\n";
             return false;
         }
     }
@@ -92,7 +90,7 @@ void appendToHashDatabase(const std::string& input, const std::string& path) {
     std::ofstream outputFile;
     outputFile.open(path, std::ios_base::app);
     if (!outputFile) {
-        std::cerr << "Cannot find database file!\n";
+        std::cerr << "Error, cannot load database from: " << path << "\n";
     }
     else {
         outputFile << input + separator;
@@ -104,7 +102,7 @@ std::unordered_set<std::string> readDatabaseToUnorderedSet(const std::string& pa
     std::unordered_set<std::string> output;
     std::ifstream inputFile(path,std::ios::out);
     if (!inputFile) {
-        std::cerr << "Error, cannot load database\n";
+        std::cerr << "Error, cannot load database from: " << path << "\n";
     }
     else {
         std::string temp;
@@ -118,10 +116,20 @@ std::unordered_set<std::string> readDatabaseToUnorderedSet(const std::string& pa
 
 std::vector<std::string> getAllFilesInDirectory(const std::string& path) {
     std::vector<std::string> result;
-    for (const std::filesystem::path& dir : std::filesystem::recursive_directory_iterator(path,
-          std::filesystem::directory_options::follow_directory_symlink | std::filesystem::directory_options::skip_permission_denied)) {
-        std::string path_string{dir.u8string()};
-        result.push_back(path_string);
+    int nonRegularFiles=0;
+    for (const std::filesystem::path& dir : std::filesystem::recursive_directory_iterator(path
+//                                                                                          ,| std::filesystem::directory_options::skip_permission_denied
+          )) {
+        if((std::filesystem::status(dir).type() == std::filesystem::file_type::regular)
+//        || (std::filesystem::status(dir).type() == std::filesystem::file_type::symlink)
+        ) {
+            std::string path_string{dir.u8string()};
+            result.push_back(path_string);
+        }
+        else {
+            nonRegularFiles++;
+        }
     }
+    std::cout << nonRegularFiles << "\n";
     return result;
 }
