@@ -8,6 +8,9 @@
 
 #include <iostream>
 #include <iomanip>
+#include <sstream>
+#include <filesystem>
+#include <fstream>
 
 #define DEFAULT_INPUT_DATA_SIZE 1024
 
@@ -29,14 +32,14 @@ std::string md5File(const char *fileName) {
     FILE *inputFile = fopen (fileName, "rb");
     std::string result;
     if (!inputFile) {
-//        std::cerr << "Wystapił błąd, podany plik nie istnieje\n";
+        std::cerr << "Error, file: "<<fileName<<" doesn't exist";
     }
     else {
         int bytes;
         unsigned char data[DEFAULT_INPUT_DATA_SIZE];
         MD5_CTX md5;
         MD5_Init(&md5);
-        while ((bytes = fread(data,1,DEFAULT_INPUT_DATA_SIZE,inputFile)) != 0) {
+        while (inputFile && (bytes = fread(data,1,DEFAULT_INPUT_DATA_SIZE,inputFile)) != 0) {
             MD5_Update(&md5, data, bytes);
         }
         MD5_Final(hash, &md5);
