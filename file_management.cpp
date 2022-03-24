@@ -14,7 +14,7 @@
 #include <queue>
 #include <cstring>
 
-#define DATABASE_PATH "/home/kozzi/CLionProjects/simple_antivirus/data/database.csv"
+#define DATABASE_PATH "/home/kozzi/CLionProjects/BSO/simple_antivirus/data/database.csv"
 
 extern const std::string quarantineDir = strcat(getenv("HOME"), "/.quarantine");
 
@@ -137,29 +137,23 @@ void followMaliciousSymlink (const std::string& path) {
     fifo.pop();
 }
 
-void scanPath(const std::string& path) {
-    std::vector<std::string> files = getAllFilesInDirectory(path);
-    std::unordered_set<std::string> hashes = readDatabaseToUnorderedSet(DATABASE_PATH);
-    auto itr = std::find(files.begin(), files.end(), quarantineDir);
-    if (itr != files.end()) files.erase(itr);
-    std::cout << "Total files: " << files.size() << "\n";
-    for (const std::string& file : files) {
-//        std::cout << "Scanning: " << file << "\n";
-        char *filePointer = const_cast<char*>(file.c_str());
-        std::string fileHash = md5File(filePointer);
-        if (findInUnorderedSet(fileHash, hashes)) {
-            std::cout << "File "<< file << " is in hash database, potential virus!!!!\n";
-            if (std::filesystem::is_symlink(file)) {
-                followMaliciousSymlink(file);
-            }
-            else {
-                quarantineAFile(file);
-            }
-        }
+bool scanFile(const std::string& hash, const std::unordered_set<std::string>& hashes) {
+    return findInUnorderedSet(hash, hashes);
+}
+
+void analyzingFile(const std::string& pathString, const std::unordered_set<std::string>& hashes) {
+    std::cout << "Analyzing: " << pathString;
+    char *filePointer = const_cast<char*>(pathString.c_str());
+    std::string hash = md5File(filePointer);
+    std:: cout << ", hash : " << hash << "\t\r" << std::flush;
+    if (scanFile(hash,hashes)) {
+        std::cout << "Found potentially malicious file: " << pathString << "\n";
+//        quarantineAFile(pathString);
     }
 }
 
-std::vector<std::string> getAllFilesInDirectory(const std::string& path) {
+std::vector<std::string> scanAllFilesInDirectory(const std::string& path) {
+    std::unordered_set<std::string> hashes = readDatabaseToUnorderedSet(DATABASE_PATH);
     std::vector<std::string> result;
     int nonRegularFiles=0;
     int symlinks=0;
@@ -168,17 +162,13 @@ std::vector<std::string> getAllFilesInDirectory(const std::string& path) {
         if(std::filesystem::status(dir).type() == std::filesystem::file_type::regular) {
             if(std::filesystem::is_symlink(dir)) {
                 std::string pathString = std::filesystem::canonical(dir.parent_path().append(dir.filename().u8string()));
-                std::cout << "Analyzing: " << pathString;
-                char *filePointer = const_cast<char*>(pathString.c_str());
-                std:: cout << ", hash : "<<md5File(filePointer)<<"\t\r" << std::flush;
+                analyzingFile(pathString, hashes);
 //            result.push_back(pathString);
                 symlinks++;
             }
             else {
                 std::string pathString{dir.u8string()};
-                std::cout << "Analyzing: " << pathString;
-                char *filePointer = const_cast<char*>(pathString.c_str());
-                std:: cout << ", hash : "<<md5File(filePointer)<<"\t\r" << std::flush;
+                analyzingFile(pathString, hashes);
 //            result.push_back(pathString);
                 regularFiles++;
             }
