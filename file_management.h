@@ -11,7 +11,7 @@
 
 
 
-void appendToHashDatabase(const std::string& input, const std::string& path);
+void appendToDatabase(const std::string& input, const std::string& path);
 
 std::vector<std::string> getAllFilesInDirectory(const std::string& path);
 
