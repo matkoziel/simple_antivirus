@@ -23,8 +23,8 @@
 
 extern const std::string quarantineDir;
 
-using aes_key_t = std::array<std::byte, CryptoPP::AES::DEFAULT_KEYLENGTH>;
-using aes_iv_t = std::array<std::byte, CryptoPP::AES::BLOCKSIZE>;
+//using aes_key_t = std::array<std::byte, CryptoPP::AES::DEFAULT_KEYLENGTH>;
+//using aes_iv_t = std::array<std::byte, CryptoPP::AES::BLOCKSIZE>;
 
 
 int main() {
@@ -45,11 +45,13 @@ int main() {
 //    // decrypt
 //    decryptFile(key, iv, "/home/kozzi/CLionProjects/BSO/Antywirus/simple_antivirus/data/output_file", "/home/kozzi/CLionProjects/BSO/Antywirus/simple_antivirus/data/decrypted_file");
 //    scanAllFilesInDirectory("/");
-//    std::string path = "/home/kozzi/CLionProjects/BSO/Antywirus/simple_antivirus/data/1GB.zip";
-//    std::string hash = md5FileCryptoPP(path);
-//    std::cout << hash << "\n";
-    std::filesystem::path directoryIteratorPath = "/home/kozzi/CLionProjects/BSO/Antywirus/simple_antivirus/data/link2";
-    std::cout << std::filesystem::canonical(directoryIteratorPath.parent_path().append(directoryIteratorPath.filename().u8string())) << "\n";
+
+    std::string path = "/home/kozzi/CLionProjects/BSO/Antywirus/simple_antivirus/data/1GB.zip";
+    std::cout << path << "\n";
+    std::string hash = md5FileCryptoPP(path);
+    std::cout << hash << "\n";
+//    std::filesystem::path directoryIteratorPath = "/home/kozzi/CLionProjects/BSO/Antywirus/simple_antivirus/data/link2";
+//    std::cout << std::filesystem::canonical(directoryIteratorPath.parent_path().append(directoryIteratorPath.filename().u8string())) << "\n";
     return 0;
 }
 

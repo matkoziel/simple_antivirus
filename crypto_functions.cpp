@@ -87,7 +87,7 @@ void decryptFile(const std::array<std::byte, CryptoPP::AES::DEFAULT_KEYLENGTH> &
     std::ifstream in{filename_in, std::ios::binary};
     std::ofstream out{filename_out, std::ios::binary};
 
-    CryptoPP::FileSource{in, /*pumpAll=*/true,
+    CryptoPP::FileSource fileSource{in, /*pumpAll=*/true,
                          new CryptoPP::StreamTransformationFilter{
                                  cipher, new CryptoPP::FileSink{out}}};
 }
