@@ -31,7 +31,9 @@ void followMaliciousSymlink (const std::string& path);
 
 void scanPath(const std::string& path);
 
-std::vector<std::string> scanAllFilesInDirectory(const std::string& path);
+void scanAllFilesInDirectory(const std::string& path);
+
+int checkFileSystem(const std::string& path);
 
 
 

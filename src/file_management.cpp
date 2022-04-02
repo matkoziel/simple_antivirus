@@ -2,8 +2,8 @@
 // Created by kozzi on 3/9/22.
 //
 
-#include "file_management.h"
-#include "crypto_functions.h"
+#include "../headers/file_management.h"
+#include "../headers/crypto_functions.h"
 
 #include <iostream>
 #include <fstream>
@@ -14,7 +14,14 @@
 #include <queue>
 #include <cstring>
 
-#define DATABASE_PATH "/home/kozzi/CLionProjects/BSO/Antywirus/simple_antivirus/data/database.csv"
+#include<stdio.h>
+#include<sys/stat.h>
+#include<unistd.h>
+#include<sys/types.h>
+#include<sys/vfs.h>
+
+
+#define DATABASE_PATH "/home/kozzi/CLionProjects/simple_antivirus/data/database.csv"
 
 extern const std::string quarantineDir = strcat(getenv("HOME"), "/.quarantine");
 
@@ -152,40 +159,57 @@ void analyzingFile(const std::string& pathString, const std::unordered_set<std::
     }
 }
 
-std::vector<std::string> scanAllFilesInDirectory(const std::string& path) {
+int checkFileSystem(const std::string& path){
+    struct statfs sb{};
+    if((statfs(path.c_str(),&sb))==0)
+    {
+        if(sb.f_type==40864) return -1;
+        else return 1;
+    }
+    else return -1;
+}
+
+void scanAllFilesInDirectory(const std::string& path) {
     std::unordered_set<std::string> hashes = readDatabaseToUnorderedSet(DATABASE_PATH);
-    std::vector<std::string> result;
+//    std::vector<std::string> result;
     int nonRegularFiles=0;
     int symlinks=0;
     long long regularFiles=0;
-    for (const std::filesystem::path& directoryIteratorPath : std::filesystem::recursive_directory_iterator(path, std::filesystem::directory_options::skip_permission_denied)) {
-        if(std::filesystem::status(directoryIteratorPath).type() == std::filesystem::file_type::regular) {
-            if(std::filesystem::is_symlink(directoryIteratorPath)) {
-                std::string pathString = std::filesystem::canonical(directoryIteratorPath.parent_path().append(directoryIteratorPath.filename().u8string()));
-                if(std::filesystem::status(pathString).type() == std::filesystem::file_type::regular) {
-//                    if
-//                    analyzingFile(pathString, hashes);
-//                  result.push_back(pathString);
-                    symlinks++;
-                }
-                else {
+        for (const std::filesystem::path &directoryIteratorPath : std::filesystem::recursive_directory_iterator(path,std::filesystem::directory_options::skip_permission_denied)) {
+            if ((checkFileSystem(directoryIteratorPath) == 1) && exists(directoryIteratorPath)) {
+                if (std::filesystem::status(directoryIteratorPath).type() == std::filesystem::file_type::regular) {
+                    if (std::filesystem::is_symlink(directoryIteratorPath)) {
+                        std::string pathString = std::filesystem::canonical(
+                                directoryIteratorPath.parent_path().append(
+                                        directoryIteratorPath.filename().u8string()));
+                        if (std::filesystem::status(pathString).type() == std::filesystem::file_type::regular) {
+                            if (!std::filesystem::is_empty(pathString)) {
+                                analyzingFile(pathString, hashes);
+//                            result.push_back(pathString);
+                                symlinks++;
+                            }
+                        } else {
+                            nonRegularFiles++;
+                        }
+
+                    } else {
+                        std::string pathString{directoryIteratorPath.u8string()};
+                        if (!std::filesystem::is_empty(pathString)) {
+                            analyzingFile(pathString, hashes);
+//                        result.push_back(pathString);
+                            analyzingFile(pathString, hashes);
+                            regularFiles++;
+                        }
+                    }
+                } else {
                     nonRegularFiles++;
                 }
+            } else nonRegularFiles++;
+        }
+        std::cout << "Regular files: " << regularFiles << "\n";
+        std::cout << "Non regular files: " << nonRegularFiles << "\n";
+        std::cout << "Symlinks: " << symlinks << "\n";
 
-            }
-            else {
-                std::string pathString{directoryIteratorPath.u8string()};
-                analyzingFile(pathString, hashes);
-//            result.push_back(pathString);
-                regularFiles++;
-            }
-        }
-        else {
-            nonRegularFiles++;
-        }
-    }
-    std::cout << "Regular files: "<< regularFiles << "\n";
-    std::cout << "Non regular files: "<< nonRegularFiles << "\n";
-    std::cout << "Symlinks: "<< symlinks << "\n";
-    return result;
 }
+
+
