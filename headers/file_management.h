@@ -35,6 +35,8 @@ void scanAllFilesInDirectory(const std::string& path);
 
 int checkFileSystem(const std::string& path);
 
+void scan(const std::string& path);
+
 
 
 #endif //FILE_MANAGEMENT_H

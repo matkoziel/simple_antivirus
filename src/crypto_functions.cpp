@@ -74,8 +74,8 @@ std::string md5FileCryptoPP(const std::string& path) {
                              )); // FileSource
     return out;
 }
-template<int T>
-std::string AESBytesToString(const std::array<std::byte, T>& in){
+
+std::string AESBytesToString(const std::array<std::byte, 16>& in){
     std::stringstream ss;
     ss << std::hex << std::setfill('0');
     for (std::byte byte : in){
@@ -83,7 +83,7 @@ std::string AESBytesToString(const std::array<std::byte, T>& in){
     }
     return ss.str();
 }
-//template<const int T>
+
 std::array<std::byte, 16> AESHexStringToBytes(const std::string& in){
     std::array<std::byte, 16> out{};
     std::stringstream converter;
@@ -103,17 +103,15 @@ std::array<std::byte, 16> AESHexStringToBytes(const std::string& in){
 //}
 
 AESCryptoData encryptFile(AESCryptoData& cryptoData) { //cryptoData contains hash, prevName, inQuarantineName
-//    CryptoPP::AutoSeededRandomPool rng{};
-//    std::array<std::byte, CryptoPP::AES::DEFAULT_KEYLENGTH> key{};
-//    rng.GenerateBlock(reinterpret_cast<byte *>(key.data()), key.size());
 
+    CryptoPP::AutoSeededRandomPool rng{};
+    std::array<std::byte, CryptoPP::AES::DEFAULT_KEYLENGTH> key{};
+    rng.GenerateBlock(reinterpret_cast<byte *>(key.data()), key.size());
 
-//    std::array<std::byte, CryptoPP::AES::BLOCKSIZE> iv{};
-//    rng.GenerateBlock(reinterpret_cast<byte *>(iv.data()), iv.size());
-//    cryptoData.iv = AESBytesToString<CryptoPP::AES::BLOCKSIZE>(iv);
-    std::array<std::byte, CryptoPP::AES::DEFAULT_KEYLENGTH> key=cryptoData.key;
-    std::array<std::byte, CryptoPP::AES::BLOCKSIZE> iv=cryptoData.iv;
-    cryptoData.keyString = AESBytesToString<CryptoPP::AES::DEFAULT_KEYLENGTH>(key);
+    std::array<std::byte, CryptoPP::AES::BLOCKSIZE> iv{};
+    rng.GenerateBlock(reinterpret_cast<byte *>(iv.data()), iv.size());
+    cryptoData.ivString = AESBytesToString(iv);
+    cryptoData.keyString = AESBytesToString(key);
     CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption cipher{};
     cipher.SetKeyWithIV(reinterpret_cast<const byte *>(key.data()), key.size(),
                         reinterpret_cast<const byte *>(iv.data()));
@@ -137,12 +135,11 @@ AESCryptoData encryptFile(AESCryptoData& cryptoData) { //cryptoData contains has
 
 void decryptFile(AESCryptoData& cryptoData) {
     CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption cipher{};
-//    std::array<std::byte, CryptoPP::AES::DEFAULT_KEYLENGTH> key = AESHexStringToBytes<CryptoPP::AES::DEFAULT_KEYLENGTH>(cryptoData.key);
-//    std::array<std::byte, CryptoPP::AES::BLOCKSIZE> iv = AESHexStringToBytes<CryptoPP::AES::BLOCKSIZE>(cryptoData.iv);
-    std::array<std::byte, CryptoPP::AES::DEFAULT_KEYLENGTH> key = cryptoData.key;
-    std::array<std::byte, CryptoPP::AES::BLOCKSIZE> iv = cryptoData.iv;
-    cipher.SetKeyWithIV(reinterpret_cast<const byte *>(cryptoData.key.data()), key.size(),
-                        reinterpret_cast<const byte *>(cryptoData.iv.data()));
+    std::array<std::byte, CryptoPP::AES::DEFAULT_KEYLENGTH> key = AESHexStringToBytes(cryptoData.keyString);
+    std::array<std::byte, CryptoPP::AES::BLOCKSIZE> iv = AESHexStringToBytes(cryptoData.ivString);
+
+    cipher.SetKeyWithIV(reinterpret_cast<const byte *>(key.data()), key.size(),
+                        reinterpret_cast<const byte *>(iv.data()));
 
     std::ifstream in{cryptoData.inQuarantineName, std::ios::binary};
     std::ofstream out{cryptoData.prevName, std::ios::binary};

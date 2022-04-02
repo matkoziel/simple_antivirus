@@ -144,19 +144,24 @@ void followMaliciousSymlink (const std::string& path) {
     fifo.pop();
 }
 
-bool scanFile(const std::string& hash, const std::unordered_set<std::string>& hashes) {
+bool checkFile(const std::string& hash, const std::unordered_set<std::string>& hashes) {
     return findInUnorderedSet(hash, hashes);
 }
 
 void analyzingFile(const std::string& pathString, const std::unordered_set<std::string>& hashes) {
-    std::cout << "Analyzing: " << pathString;
-    char *filePointer = const_cast<char*>(pathString.c_str());
-    std::string hash = md5File(filePointer);
-    std:: cout << ", hash : " << hash << "\t\r" << std::flush;
-    if (scanFile(hash,hashes)) {
-        std::cout << "Found potentially malicious file: " << pathString << "\n";
+    try {
+        std::string hash = md5FileCryptoPP(pathString);
+        std::cout << "Analyzing: " << pathString;
+        std:: cout << ", hash : " << hash << "\n";
+//        std:: cout << ", hash : " << hash << "\t\r" << std::flush;
+        if (checkFile(hash, hashes)) {
+            std::cout << "Found potentially malicious file: " << pathString << "\n";
 //        quarantineAFile(pathString);
+        }
+    }catch (CryptoPP::FileStore::OpenErr const & ex){
+        std::cerr << "Failed hashing file, "<<ex.GetWhat()<<"\n";
     }
+
 }
 
 int checkFileSystem(const std::string& path){
@@ -171,7 +176,6 @@ int checkFileSystem(const std::string& path){
 
 void scanAllFilesInDirectory(const std::string& path) {
     std::unordered_set<std::string> hashes = readDatabaseToUnorderedSet(DATABASE_PATH);
-//    std::vector<std::string> result;
     int nonRegularFiles=0;
     int symlinks=0;
     long long regularFiles=0;
@@ -185,7 +189,6 @@ void scanAllFilesInDirectory(const std::string& path) {
                         if (std::filesystem::status(pathString).type() == std::filesystem::file_type::regular) {
                             if (!std::filesystem::is_empty(pathString)) {
                                 analyzingFile(pathString, hashes);
-//                            result.push_back(pathString);
                                 symlinks++;
                             }
                         } else {
@@ -196,8 +199,6 @@ void scanAllFilesInDirectory(const std::string& path) {
                         std::string pathString{directoryIteratorPath.u8string()};
                         if (!std::filesystem::is_empty(pathString)) {
                             analyzingFile(pathString, hashes);
-//                        result.push_back(pathString);
-                            analyzingFile(pathString, hashes);
                             regularFiles++;
                         }
                     }
@@ -206,10 +207,50 @@ void scanAllFilesInDirectory(const std::string& path) {
                 }
             } else nonRegularFiles++;
         }
+        std::cout << "Scanned: \n";
         std::cout << "Regular files: " << regularFiles << "\n";
         std::cout << "Non regular files: " << nonRegularFiles << "\n";
         std::cout << "Symlinks: " << symlinks << "\n";
+}
 
+void scan(const std::string& path){
+    try {
+        bool isDirectory = std::filesystem::is_directory(path);
+        if(isDirectory){
+            scanAllFilesInDirectory(path);
+        }
+        else {
+            std::unordered_set<std::string> hashes = readDatabaseToUnorderedSet(DATABASE_PATH);
+            const std::filesystem::path &directoryIteratorPath(path);
+            if ((checkFileSystem(directoryIteratorPath) == 1) && exists(directoryIteratorPath)) {
+                if (std::filesystem::status(directoryIteratorPath).type() == std::filesystem::file_type::regular) {
+                    if (std::filesystem::is_symlink(directoryIteratorPath)) {
+                        std::string pathString = std::filesystem::canonical(
+                                directoryIteratorPath.parent_path().append(
+                                        directoryIteratorPath.filename().u8string()));
+                        if (std::filesystem::status(pathString).type() == std::filesystem::file_type::regular) {
+                            if (!std::filesystem::is_empty(pathString)) {
+                                analyzingFile(pathString, hashes);
+                            }
+                        } else {
+                            std::cout << "Failed\n";
+                        }
+
+                    } else {
+                        std::string pathString{directoryIteratorPath.u8string()};
+                        if (!std::filesystem::is_empty(pathString)) {
+                            analyzingFile(pathString, hashes);
+                        }
+                    }
+                } else {
+                    std::cout << "Failed\n";
+                }
+            } else std::cout << "Failed\n";
+        }
+    }
+    catch(std::filesystem::filesystem_error const& ex) {
+        std::cerr << ex.code().message() <<": "<< path<< "\n";
+    }
 }
 
 

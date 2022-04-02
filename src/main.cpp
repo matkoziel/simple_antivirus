@@ -8,17 +8,11 @@
 
 extern const std::string quarantineDir;
 
-//using aes_key_t = std::array<std::byte, CryptoPP::AES::DEFAULT_KEYLENGTH>;
-//using aes_iv_t = std::array<std::byte, CryptoPP::AES::BLOCKSIZE>;
-
-
-
 int main() {
 
-    scanAllFilesInDirectory("/dev");
-//    std::filesystem::path directoryIteratorPath("/etc/ssl/private/ssl-cert-snakeoil.key");
-//    std::cout <<is_empty(directoryIteratorPath) << "\n";
-
+//    scanAllFilesInDirectory("/etc");
+    scan("1231231");
+//    std::cout << checkFileSystem("/etc/brlapi.key");
 //    AESCryptoData aes{};
 //    aes.prevName = "/home/kozzi/CLionProjects/simple_antivirus/data/plain.txt";
 //    aes.inQuarantineName = "/home/kozzi/CLionProjects/simple_antivirus/data/cyphertext.txt";
@@ -36,13 +30,16 @@ int main() {
 
 //    encryptFile(aes);
 //    decryptFile(aes);
-
+//    std::string path = "/etc/ssl/private/ssl-cert-snakeoil.key";
+//    std::cout << std::filesystem::is_directory(path) <<"\n";
 
     return 0;
 }
 
-
-//TODO: Linki(done), pliki specjalne (partialy done) - done
+//TODO: Skanowanie /proc coś wywala czasami
 //TODO: CLI
-//TODO: Duże pliki (kcore) - done
+//TODO: Zrobienie tabelki w folderze kwarantanny
+//TODO: Przy przenoszeniu do kwarantanny zapisać do tabelki:nazwę teraz, nazwę przed, klucz, iv, wcześniejsze uprawnienia
+//TODO: Zrobić przywacanie z kwarantanny na podstawie wcześniejszej nazwy
+//TODO: Zmienić opisy przy skanowaniu na sensowne
 

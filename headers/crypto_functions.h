@@ -21,8 +21,8 @@ struct AESCryptoData {
     std::string hash;
     std::string keyString;
     std::string ivString;
-    std::array<std::byte, CryptoPP::AES::DEFAULT_KEYLENGTH> key;
-    std::array<std::byte, CryptoPP::AES::BLOCKSIZE> iv;
+//    std::array<std::byte, CryptoPP::AES::DEFAULT_KEYLENGTH> key;
+//    std::array<std::byte, CryptoPP::AES::BLOCKSIZE> iv;
 };
 
 std::string md5(const std::string& str);
@@ -35,7 +35,6 @@ void decryptFile(AESCryptoData& cryptoData);
 
 std::string md5FileCryptoPP(const std::string& path);
 
-//template<int T>
 std::array<std::byte, 16> AESHexStringToBytes(const std::string& in);
 
 std::string AESBytesToString(const std::array<std::byte, 16>& in);
