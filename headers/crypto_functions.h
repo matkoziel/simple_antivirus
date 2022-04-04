@@ -18,11 +18,9 @@
 struct AESCryptoData {
     std::string prevName;
     std::string inQuarantineName;
-    std::string hash;
     std::string keyString;
     std::string ivString;
-//    std::array<std::byte, CryptoPP::AES::DEFAULT_KEYLENGTH> key;
-//    std::array<std::byte, CryptoPP::AES::BLOCKSIZE> iv;
+    std::string perms;
 };
 
 std::string md5(const std::string& str);

@@ -5,6 +5,7 @@
 #include <iostream>
 #include <vector>
 #include <unordered_set>
+#include "crypto_functions.h"
 
 #ifndef FILE_MANAGEMENT_H
 #define FILE_MANAGEMENT_H
@@ -36,6 +37,11 @@ void scanAllFilesInDirectory(const std::string& path);
 int checkFileSystem(const std::string& path);
 
 void scan(const std::string& path);
+
+AESCryptoData findInQuarantine(const std::string& prevPath, const std::unordered_set<std::string>& quarantineDatabase);
+
+void addToQuarantineDatabase(const AESCryptoData& aes, const std::string& databasePath);
+
 
 
 
