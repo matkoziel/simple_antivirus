@@ -11,6 +11,9 @@
 #include <cryptopp/files.h>
 #include <cryptopp/modes.h>
 #include <array>
+#include <filesystem>
+#include <filesystem>
+#include <unordered_set>
 
 #ifndef ANTYWIRUSCLION_CRYPTO_FUNCTIONS_H
 #define ANTYWIRUSCLION_CRYPTO_FUNCTIONS_H
@@ -20,21 +23,21 @@ struct AESCryptoData {
     std::string inQuarantineName;
     std::string keyString;
     std::string ivString;
-    std::string perms;
+    std::filesystem::perms perms;
 };
 
 std::string md5(const std::string& str);
 
 std::string md5File(const char *fileName);
 
-AESCryptoData encryptFile(AESCryptoData& cryptoData);
-
-void decryptFile(AESCryptoData& cryptoData);
-
 std::string md5FileCryptoPP(const std::string& path);
+
+std::string AESBytesToString(const std::array<std::byte, 16>& in);
 
 std::array<std::byte, 16> AESHexStringToBytes(const std::string& in);
 
-std::string AESBytesToString(const std::array<std::byte, 16>& in);
+AESCryptoData encryptFile(AESCryptoData& cryptoData,std::unordered_set<std::string>& database);
+
+void decryptFile(AESCryptoData& cryptoData);
 
 #endif //ANTYWIRUSCLION_CRYPTO_FUNCTIONS_H

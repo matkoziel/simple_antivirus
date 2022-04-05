@@ -11,38 +11,34 @@
 #define FILE_MANAGEMENT_H
 
 
+bool findInUnorderedSet(const std::string& value, const std::unordered_set<std::string>& unorderedSet);
 
-void appendToDatabase(const std::string& input, const std::string& path);
-
-std::vector<std::string> getAllFilesInDirectory(const std::string& path);
+std::string renameFileToAvoidConflicts();
 
 bool moveFile(const std::string& from, const std::string& to);
 
+void saveToDatabase(const std::unordered_set<std::string>& database);
+
+void appendToDatabase(const std::string& input, std::unordered_set<std::string>& database);
+
 std::unordered_set<std::string> readDatabaseToUnorderedSet(const std::string& path);
 
-bool findInUnorderedSet(const std::string& value, const std::unordered_set<std::string>& unorderedSet);
+void removeExecutePermissions(const std::string& path);
 
-std::string renameFileToAvoidConflicts(const std::string& path);
+void analyzingFile(const std::string& pathString, std::unordered_set<std::string>& hashes, std::unordered_set<std::string>& quarantineDB);
 
-void moveAndRemovePermissions(const std::string& path);
-
-void quarantineAFile(const std::string& path);
-
-void followMaliciousSymlink (const std::string& path);
-
-void scanPath(const std::string& path);
-
-void scanAllFilesInDirectory(const std::string& path);
+bool checkFile(const std::string& hash, const std::unordered_set<std::string>& hashes);
 
 int checkFileSystem(const std::string& path);
 
-void scan(const std::string& path);
+AESCryptoData findInQuarantine(const std::string& prevPath, const std::unordered_set<std::string>& quarantineDb);
 
-AESCryptoData findInQuarantine(const std::string& prevPath, const std::unordered_set<std::string>& quarantineDatabase);
+void addToQuarantineDatabase(const AESCryptoData& aes, std::unordered_set<std::string>& database);
 
-void addToQuarantineDatabase(const AESCryptoData& aes, const std::string& databasePath);
+void restoreFromQuarantine(const std::string& path, const std::unordered_set<std::string>& quarantineDb);
 
+void scanAllFilesInDirectory(const std::string& path, std::unordered_set<std::string>& hashes,std::unordered_set<std::string>& quarantineDB);
 
-
+void scan(const std::string& path, std::unordered_set<std::string>& hashes,std::unordered_set<std::string>& quarantineDB);
 
 #endif //FILE_MANAGEMENT_H

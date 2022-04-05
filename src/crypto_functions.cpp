@@ -3,20 +3,15 @@
 //
 
 #include "../headers/crypto_functions.h"
+#include "../headers/file_management.h"
+#include "../headers/main.h"
 
 #include <openssl/md5.h>
 
 #include <iostream>
 #include <iomanip>
-#include <sstream>
-#include <filesystem>
-#include <fstream>
-#include <random>
 #include <crypto++/aes.h>
 #include <crypto++/filters.h>
-#include <crypto++/modes.h>
-#include <iomanip>
-#include <fstream>
 #include <cryptopp/files.h>
 #include <cryptopp/modes.h>
 #include <cryptopp/osrng.h>
@@ -68,14 +63,20 @@ std::string md5File(const char *fileName) {
 std::string md5FileCryptoPP(const std::string& path) {
     CryptoPP::MD5 md5;
     std::string out;
-    CryptoPP::FileSource fs( path.c_str(), true /* PumpAll */,
-                             new CryptoPP::HashFilter( md5,
-                                                       new CryptoPP::HexEncoder(new CryptoPP::StringSink( out),false /*UCase*/) // HexEncoder) // HashFilter
-                             )); // FileSource
+    try {
+        CryptoPP::FileSource fs(path.c_str(), true /* PumpAll */,
+                                new CryptoPP::HashFilter(md5,
+                                                         new CryptoPP::HexEncoder(new CryptoPP::StringSink(out),
+                                                                                  false /*UCase*/) // HexEncoder) // HashFilter
+                                ));// FileSource
+    }
+    catch (CryptoPP::FileStore::OpenErr const & ex){
+        std::cerr << "Failed hashing file, "<<ex.GetWhat()<<"\n";
+    }
     return out;
 }
 
-std::string AESBytesToString(const std::array<std::byte, 16>& in){
+std::string AESBytesToString(const std::array<std::byte, 16>& in) {
     std::stringstream ss;
     ss << std::hex << std::setfill('0');
     for (std::byte byte : in){
@@ -84,7 +85,7 @@ std::string AESBytesToString(const std::array<std::byte, 16>& in){
     return ss.str();
 }
 
-std::array<std::byte, 16> AESHexStringToBytes(const std::string& in){
+std::array<std::byte, 16> AESHexStringToBytes(const std::string& in) {
     std::array<std::byte, 16> out{};
     std::stringstream converter;
     for(int i = 0; i < out.size(); i++){
@@ -98,12 +99,7 @@ std::array<std::byte, 16> AESHexStringToBytes(const std::string& in){
     return out;
 }
 
-//AESCryptoData writeCryptoDataToDatabase(const std::string& path){
-//
-//}
-
-AESCryptoData encryptFile(AESCryptoData& cryptoData) { //cryptoData contains hash, prevName, inQuarantineName
-
+AESCryptoData encryptFile(AESCryptoData& cryptoData,std::unordered_set<std::string>& database) {
     CryptoPP::AutoSeededRandomPool rng{};
     std::array<std::byte, CryptoPP::AES::DEFAULT_KEYLENGTH> key{};
     rng.GenerateBlock(reinterpret_cast<byte *>(key.data()), key.size());
@@ -116,10 +112,8 @@ AESCryptoData encryptFile(AESCryptoData& cryptoData) { //cryptoData contains has
     cipher.SetKeyWithIV(reinterpret_cast<const byte *>(key.data()), key.size(),
                         reinterpret_cast<const byte *>(iv.data()));
 
-//    std::array<std::byte, CryptoPP::AES::DEFAULT_KEYLENGTH> keyRestored = AESHexStringToBytes<CryptoPP::AES::DEFAULT_KEYLENGTH>(cryptoData.key);
-//    std::array<std::byte, CryptoPP::AES::BLOCKSIZE> ivRestored = AESHexStringToBytes<CryptoPP::AES::BLOCKSIZE>(cryptoData.iv);
-//    std::cout << (keyRestored==key)<<"\n";
-//    std::cout << (ivRestored==iv)<<"\n";
+    addToQuarantineDatabase(cryptoData,database);
+
     std::ifstream in{cryptoData.prevName, std::ios::binary};
     std::ofstream out{cryptoData.inQuarantineName, std::ios::binary};
     CryptoPP::FileSource{in, /*pumpAll=*/true,
@@ -128,10 +122,6 @@ AESCryptoData encryptFile(AESCryptoData& cryptoData) { //cryptoData contains has
 
     return cryptoData;
 }
-
-//AESCryptoData findCryptoDataInDatabase(const std::string& path){
-//
-//}
 
 void decryptFile(AESCryptoData& cryptoData) {
     CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption cipher{};
