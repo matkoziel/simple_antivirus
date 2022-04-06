@@ -45,6 +45,26 @@ bool moveFile(const std::string& from, const std::string& to) {
         }
     }
 }
+void checkForDuplicate(const std::string& input, std::unordered_set<std::string>& database){
+    int delimiter = input.find_first_of(',');
+    std::string temp1 = input.substr(0,delimiter);
+    std::string toRemove{};
+    for (std::string line : database){
+        int delimiter = line.find_first_of(',');
+        std::string temp = line.substr(0,delimiter);
+        if (temp == temp1){
+            toRemove=line;
+            database.insert(input);
+            break;
+        }
+    }
+    database.insert(input);
+    if(!toRemove.empty()){
+        auto iterator = database.find(toRemove);
+        std::cout << iterator->c_str() << "\n";
+        database.erase(iterator);
+    }
+}
 
 void saveToDatabase(const std::unordered_set<std::string>& database) {
     std::ofstream outputFile;
@@ -56,11 +76,27 @@ void saveToDatabase(const std::unordered_set<std::string>& database) {
 }
 
 void appendToDatabase(const std::string& input, std::unordered_set<std::string>& database) {
-    database.insert(input);
+//    database.insert(input);
+    checkForDuplicate(input,database);
     saveToDatabase(database);
 }
 
 std::unordered_set<std::string> readDatabaseToUnorderedSet(const std::string& path) {
+    std::unordered_set<std::string> output;
+    std::ifstream inputFile(path,std::ios::out);
+    if (!inputFile) {
+        std::cerr << "Error, cannot load database from: " << path << "\n";
+    }
+    else {
+        std::string temp;
+        while(getline(inputFile, temp)) {
+            output.insert(temp);
+        }
+    }
+    inputFile.close();
+    return output;
+}
+std::unordered_set<std::string> readDatabaseToVector(const std::string& path) {
     std::unordered_set<std::string> output;
     std::ifstream inputFile(path,std::ios::out);
     if (!inputFile) {
@@ -89,33 +125,12 @@ void removeExecutePermissions(const std::string& path) {
 
 AESCryptoData quarantineAFile(const std::string& path, std::unordered_set<std::string>& database) {
     AESCryptoData aes{};
-    if (std::filesystem::is_directory(quarantineDir)) {
-        std::string movedTo = renameFileToAvoidConflicts();
-        aes.prevName = path;
-        aes.inQuarantineName = movedTo;
-        aes.perms = status(std::filesystem::path(path)).permissions();
-        encryptFile(aes,database);
-        removeExecutePermissions(aes.inQuarantineName);
-    }
-    else {
-        std::filesystem::create_directory(quarantineDir);
-        std::filesystem::permissions(quarantineDir,std::filesystem::perms::owner_all |
-                                                   std::filesystem::perms::group_write | std::filesystem::perms::group_read |
-                                                   std::filesystem::perms::others_write | std::filesystem::perms::others_read,
-                                                   std::filesystem::perm_options::replace);
-        if(std::filesystem::is_directory(quarantineDir)) {
-            std::cout << "Successfully created quarantine directory in :"<< quarantineDir << "\n";
-            std::string movedTo = renameFileToAvoidConflicts();
-            aes.prevName = path;
-            aes.inQuarantineName = movedTo;
-            aes.perms = status(std::filesystem::path(path)).permissions();
-            encryptFile(aes,database);
-            removeExecutePermissions(aes.inQuarantineName);
-        }
-        else {
-            std::cout << "Unable to create a quarantine directory in :"<< quarantineDir << "\n";
-        }
-    }
+    std::string movedTo = renameFileToAvoidConflicts();
+    aes.prevName=path;
+    aes.inQuarantineName = movedTo;
+    aes.perms = status(std::filesystem::path(path)).permissions();
+    encryptFile(aes,database);
+    removeExecutePermissions(aes.inQuarantineName);
     return aes;
 }
 
@@ -165,6 +180,7 @@ AESCryptoData findInQuarantine(const std::string& prevPath, const std::unordered
             break;
         }
     }
+    if(quarantineData[0].empty()) return aes;
     aes.prevName=quarantineData[0];
     aes.inQuarantineName=quarantineData[1];
     aes.keyString=quarantineData[2];
@@ -179,10 +195,14 @@ void addToQuarantineDatabase(const AESCryptoData& aes, std::unordered_set<std::s
     appendToDatabase(ss.str(),database);
 }
 
-void restoreFromQuarantine(const std::string& path, const std::unordered_set<std::string>& quarantineDb){
+bool restoreFromQuarantine(const std::string& path, const std::unordered_set<std::string>& quarantineDb){
     AESCryptoData aes = findInQuarantine(path,quarantineDb);
+    if(aes.prevName.empty()){
+        return false;
+    }
     decryptFile(aes);
     std::filesystem::permissions(aes.prevName,aes.perms,std::filesystem::perm_options::replace);
+    return true;
 }
 
 void scanAllFilesInDirectory(const std::string& path, std::unordered_set<std::string>& hashes,std::unordered_set<std::string>& quarantineDB) {

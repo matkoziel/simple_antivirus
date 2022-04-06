@@ -35,7 +35,7 @@ AESCryptoData findInQuarantine(const std::string& prevPath, const std::unordered
 
 void addToQuarantineDatabase(const AESCryptoData& aes, std::unordered_set<std::string>& database);
 
-void restoreFromQuarantine(const std::string& path, const std::unordered_set<std::string>& quarantineDb);
+bool restoreFromQuarantine(const std::string& path, const std::unordered_set<std::string>& quarantineDb);
 
 void scanAllFilesInDirectory(const std::string& path, std::unordered_set<std::string>& hashes,std::unordered_set<std::string>& quarantineDB);
 
