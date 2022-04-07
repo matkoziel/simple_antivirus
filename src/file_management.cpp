@@ -230,12 +230,19 @@ void scanAllFilesInDirectory(const std::string& path, std::unordered_set<std::st
     int symlinks=0;
     long long regularFiles=0;
         for (const std::filesystem::path &directoryIteratorPath : std::filesystem::recursive_directory_iterator(path,std::filesystem::directory_options::skip_permission_denied)) {
-            if ((checkFileSystem(directoryIteratorPath)) && exists(directoryIteratorPath)) {
+            if ((checkFileSystem(directoryIteratorPath))) {
                 if (std::filesystem::status(directoryIteratorPath).type() == std::filesystem::file_type::regular) {
                     if (std::filesystem::is_symlink(directoryIteratorPath)) {
-                        std::string pathString = std::filesystem::canonical(
-                                directoryIteratorPath.parent_path().append(
-                                        directoryIteratorPath.filename().u8string()));
+                        std::string pathString{};
+                        try {
+                            pathString = std::filesystem::canonical(
+                                    directoryIteratorPath.parent_path().append(
+                                            directoryIteratorPath.filename().u8string()));
+                        }
+                        catch(std::filesystem::filesystem_error const& ex) {
+                            std::cerr << "Cannot create canonical path of: "<< directoryIteratorPath<< "\n";
+                            continue;
+                        }
                         if (std::filesystem::status(pathString).type() == std::filesystem::file_type::regular) {
                             if (!std::filesystem::is_empty(pathString)) {
                                 analyzingFile(pathString, hashes,quarantineDB);
@@ -265,7 +272,6 @@ void scanAllFilesInDirectory(const std::string& path, std::unordered_set<std::st
 
 void scan(const std::string& path, std::unordered_set<std::string>& hashes,std::vector<std::string>& quarantineDB){
     std::cout << "Work in progress...\n";
-    try {
         bool isDirectory = std::filesystem::is_directory(path);
         if(isDirectory){
             scanAllFilesInDirectory(path,hashes,quarantineDB);
@@ -275,9 +281,16 @@ void scan(const std::string& path, std::unordered_set<std::string>& hashes,std::
             if ((checkFileSystem(directoryIteratorPath)) && exists(directoryIteratorPath)) {
                 if (std::filesystem::status(directoryIteratorPath).type() == std::filesystem::file_type::regular) {
                     if (std::filesystem::is_symlink(directoryIteratorPath)) {
-                        std::string pathString = std::filesystem::canonical(
-                                directoryIteratorPath.parent_path().append(
-                                        directoryIteratorPath.filename().u8string()));
+                        std::string pathString{};
+                        try {
+                            pathString = std::filesystem::canonical(
+                                    directoryIteratorPath.parent_path().append(
+                                            directoryIteratorPath.filename().u8string()));
+                        }
+                        catch(std::filesystem::filesystem_error const& ex) {
+                            std::cerr << "Cannot create canonical path of: "<< path<< "\n";
+                            return;
+                        }
                         if (std::filesystem::status(pathString).type() == std::filesystem::file_type::regular) {
                             if (!std::filesystem::is_empty(pathString)) {
                                 analyzingFile(pathString, hashes,quarantineDB);
@@ -298,9 +311,6 @@ void scan(const std::string& path, std::unordered_set<std::string>& hashes,std::
             } else std::cout << "Failed\n";
         }
     }
-    catch(std::filesystem::filesystem_error const& ex) {
-        std::cerr << ex.code().message() <<": "<< path<< "\n";
-    }
-}
+
 
 

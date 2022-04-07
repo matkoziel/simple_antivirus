@@ -10,6 +10,16 @@ std::string quarantineDatabase;
 
 int main(int argc, char **argv) {
 
+//    std::string hex = "f5bb0c8de146c67b44babbf4e6584cc0";
+//    std::string firstPart = hex.substr(0,16);
+//    std::string secondPart = hex.substr(16,32);
+//    std::transform(firstPart.begin(), firstPart.end(),firstPart.begin(), ::toupper);
+//    std::uint64_t first = std::stol(firstPart);
+//    std::cout << firstPart << "\n";
+//    std::cout << secondPart << "\n";
+//    std::cout << first << "\n";
+//    std::cout << std::stoll(secondPart) << "\n";
+
     quarantineDir= getenv("HOME");
     quarantineDir=quarantineDir.append("/.quarantine");
     quarantineDatabase=quarantineDir +"/.quarantine_database.csv";
