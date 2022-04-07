@@ -44,7 +44,7 @@ int main(int argc, char **argv) {
                     file.close();
                 }
                 std::unordered_set<std::string> hashDatabase = readDatabaseToUnorderedSet(hashDatabaseStr);
-                std::unordered_set<std::string> quarantineDatabaseDB = readDatabaseToUnorderedSet(quarantineDatabase);
+                std::vector<std::string> quarantineDatabaseDB = readQuarantineDatabase(quarantineDatabase);
                 scan(scanFileName, hashDatabase, quarantineDatabaseDB);
             }
             else {
@@ -62,7 +62,7 @@ int main(int argc, char **argv) {
                     }
                     std::cout << "Successfully created quarantine directory in :" << quarantineDir << "\n";
                     std::unordered_set<std::string> hashDatabase = readDatabaseToUnorderedSet(hashDatabaseStr);
-                    std::unordered_set<std::string> quarantineDatabaseDB = readDatabaseToUnorderedSet(quarantineDatabase);
+                    std::vector<std::string> quarantineDatabaseDB = readQuarantineDatabase(quarantineDatabase);
                     scan(scanFileName, hashDatabase, quarantineDatabaseDB);
                 } else {
                     std::cerr << "Unable to create a quarantine directory in :" << quarantineDir << "\n";
@@ -72,7 +72,7 @@ int main(int argc, char **argv) {
         }
     }
     if(*restoreOpt){
-        std::unordered_set<std::string> quarantineDatabaseDB = readDatabaseToUnorderedSet(quarantineDatabase);
+        std::vector<std::string> quarantineDatabaseDB = readQuarantineDatabase(quarantineDatabase);
         if(!restoreFromQuarantine(restoreFileName,quarantineDatabaseDB)){
             std::cerr << "No such file in quarantine database\n";
             return EXIT_FAILURE;
@@ -87,7 +87,6 @@ int main(int argc, char **argv) {
 //TODO: Skanowanie /proc coś wywala czasami
 //TODO: Zmienić opisy przy skanowaniu na sensowne
 //TODO: Testowanie
-//TODO: Zamiana unordered seta w quarantine database na stacka zeby mozna bylo odczytywac po kolei pliki
 //TODO: Zamiana stringow w tablice uint64 i dopisanie funkcji hashujacej
 
 

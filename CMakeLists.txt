@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 
 link_libraries(crypto)
+#add_library(crypto++ STATIC IMPORTED)
 link_libraries(crypto++)
 #target_link_libraries(crypto++ STATIC)
 #find_package(crypto++ REQUIRED)
