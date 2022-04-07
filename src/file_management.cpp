@@ -199,14 +199,30 @@ void addToQuarantineDatabase(const AESCryptoData& aes, std::vector<std::string>&
     appendToQuarantineDatabase(ss.str(),database);
 }
 
-bool restoreFromQuarantine(const std::string& path, const std::vector<std::string>& quarantineDb){
+bool restoreFromQuarantine(const std::string& path,std::vector<std::string>& quarantineDb){
     AESCryptoData aes = findInQuarantine(path,quarantineDb);
     if(aes.prevName.empty()){
         return false;
     }
     decryptFile(aes);
-    std::filesystem::permissions(aes.prevName,aes.perms,std::filesystem::perm_options::replace);
-    return true;
+    std::string toRemove{};
+    for (std::string line : quarantineDb){
+        int delimiter = line.find_first_of(',');
+        std::string temp = line.substr(0,delimiter);
+        if (temp == aes.prevName){
+            toRemove=line;
+            break;
+        }
+    }
+    if(!toRemove.empty()){
+        auto position = std::find(quarantineDb.begin(), quarantineDb.end(), toRemove);
+        quarantineDb.erase(position);
+        std::filesystem::remove(aes.inQuarantineName);
+        saveToQuarantineDatabase(quarantineDb);
+        return true;
+    }
+    else
+        return false;
 }
 
 void scanAllFilesInDirectory(const std::string& path, std::unordered_set<std::string>& hashes,std::vector<std::string>& quarantineDB) {
