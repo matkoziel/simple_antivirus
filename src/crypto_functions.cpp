@@ -99,7 +99,7 @@ std::array<std::byte, 16> AESHexStringToBytes(const std::string& in) {
     return out;
 }
 
-AESCryptoData encryptFile(AESCryptoData& cryptoData,std::unordered_set<std::string>& database) {
+AESCryptoData encryptFile(AESCryptoData& cryptoData,std::vector<std::string>& database) {
     CryptoPP::AutoSeededRandomPool rng{};
     std::array<std::byte, CryptoPP::AES::DEFAULT_KEYLENGTH> key{};
     rng.GenerateBlock(reinterpret_cast<byte *>(key.data()), key.size());

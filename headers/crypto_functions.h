@@ -36,7 +36,7 @@ std::string AESBytesToString(const std::array<std::byte, 16>& in);
 
 std::array<std::byte, 16> AESHexStringToBytes(const std::string& in);
 
-AESCryptoData encryptFile(AESCryptoData& cryptoData,std::unordered_set<std::string>& database);
+AESCryptoData encryptFile(AESCryptoData& cryptoData,std::vector<std::string>& database);
 
 void decryptFile(AESCryptoData& cryptoData);
 

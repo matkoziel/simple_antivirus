@@ -19,9 +19,11 @@ bool moveFile(const std::string& from, const std::string& to);
 
 void saveToDatabase(const std::unordered_set<std::string>& database);
 
-void appendToDatabase(const std::string& input, std::unordered_set<std::string>& database);
+void appendToQuarantineDatabase(const std::string& input, std::vector<std::string>& database);
 
 std::unordered_set<std::string> readDatabaseToUnorderedSet(const std::string& path);
+
+std::vector<std::string> readQuarantineDatabase(const std::string& path);
 
 void removeExecutePermissions(const std::string& path);
 
@@ -29,16 +31,16 @@ void analyzingFile(const std::string& pathString, std::unordered_set<std::string
 
 bool checkFile(const std::string& hash, const std::unordered_set<std::string>& hashes);
 
-int checkFileSystem(const std::string& path);
+bool checkFileSystem(const std::string& path);
 
-AESCryptoData findInQuarantine(const std::string& prevPath, const std::unordered_set<std::string>& quarantineDb);
+AESCryptoData findInQuarantine(const std::string& prevPath, const std::vector<std::string>& quarantineDb);
 
-void addToQuarantineDatabase(const AESCryptoData& aes, std::unordered_set<std::string>& database);
+void addToQuarantineDatabase(const AESCryptoData& aes, std::vector<std::string>& database);
 
-bool restoreFromQuarantine(const std::string& path, const std::unordered_set<std::string>& quarantineDb);
+bool restoreFromQuarantine(const std::string& path, const std::vector<std::string>& quarantineDb);
 
 void scanAllFilesInDirectory(const std::string& path, std::unordered_set<std::string>& hashes,std::unordered_set<std::string>& quarantineDB);
 
-void scan(const std::string& path, std::unordered_set<std::string>& hashes,std::unordered_set<std::string>& quarantineDB);
+void scan(const std::string& path, std::unordered_set<std::string>& hashes,std::vector<std::string>& quarantineDB);
 
 #endif //FILE_MANAGEMENT_H

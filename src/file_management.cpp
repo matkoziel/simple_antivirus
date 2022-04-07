@@ -9,6 +9,7 @@
 #include <iostream>
 #include <filesystem>
 #include <unordered_set>
+#include <stack>
 
 #include<sys/vfs.h>
 
@@ -66,7 +67,7 @@ void checkForDuplicate(const std::string& input, std::unordered_set<std::string>
     }
 }
 
-void saveToDatabase(const std::unordered_set<std::string>& database) {
+void saveToQuarantineDatabase(const std::vector<std::string>& database) {
     std::ofstream outputFile;
     outputFile.open(quarantineDatabase, std::ios_base::out);
     for (std::string line : database){
@@ -75,10 +76,26 @@ void saveToDatabase(const std::unordered_set<std::string>& database) {
     outputFile.close();
 }
 
-void appendToDatabase(const std::string& input, std::unordered_set<std::string>& database) {
-//    database.insert(input);
-    checkForDuplicate(input,database);
-    saveToDatabase(database);
+void appendToQuarantineDatabase(const std::string& input, std::vector<std::string>& database) {
+    database.insert(database.begin(),input);
+//    checkForDuplicate(input,database);
+    saveToQuarantineDatabase(database);
+}
+
+std::vector<std::string> readQuarantineDatabase(const std::string& path){
+    std::vector<std::string> out{};
+    std::ifstream inputFile(path,std::ios::out);
+    if (!inputFile) {
+        std::cerr << "Error, cannot load database from: " << path << "\n";
+    }
+    else {
+        std::string temp;
+        while(getline(inputFile, temp)) {
+            out.push_back(temp);
+        }
+    }
+    inputFile.close();
+    return out;
 }
 
 std::unordered_set<std::string> readDatabaseToUnorderedSet(const std::string& path) {
@@ -96,21 +113,7 @@ std::unordered_set<std::string> readDatabaseToUnorderedSet(const std::string& pa
     inputFile.close();
     return output;
 }
-std::unordered_set<std::string> readDatabaseToVector(const std::string& path) {
-    std::unordered_set<std::string> output;
-    std::ifstream inputFile(path,std::ios::out);
-    if (!inputFile) {
-        std::cerr << "Error, cannot load database from: " << path << "\n";
-    }
-    else {
-        std::string temp;
-        while(getline(inputFile, temp)) {
-            output.insert(temp);
-        }
-    }
-    inputFile.close();
-    return output;
-}
+
 void removeExecutePermissions(const std::string& path) {
     if(exists(std::filesystem::path(path))){
         std::filesystem::permissions(path,std::filesystem::perms::owner_read | std::filesystem::perms::owner_write |
@@ -123,7 +126,7 @@ void removeExecutePermissions(const std::string& path) {
     }
 }
 
-AESCryptoData quarantineAFile(const std::string& path, std::unordered_set<std::string>& database) {
+AESCryptoData quarantineAFile(const std::string& path, std::vector<std::string>& database) {
     AESCryptoData aes{};
     std::string movedTo = renameFileToAvoidConflicts();
     aes.prevName=path;
@@ -138,7 +141,7 @@ bool checkFile(const std::string& hash, const std::unordered_set<std::string>& h
     return findInUnorderedSet(hash, hashes);
 }
 
-void analyzingFile(const std::string& pathString, std::unordered_set<std::string>& hashes, std::unordered_set<std::string>& quarantineDB) {
+void analyzingFile(const std::string& pathString, std::unordered_set<std::string>& hashes, std::vector<std::string>& quarantineDB) {
     std::cout << "Analyzing: " << pathString;
     std::string hash = md5FileCryptoPP(pathString);
     std::cout << ", hash : " << hash << "\n";
@@ -155,15 +158,16 @@ void analyzingFile(const std::string& pathString, std::unordered_set<std::string
     }
 }
 
-int checkFileSystem(const std::string& path) {
+bool checkFileSystem(const std::string& path) {
     struct statfs sb{};
     if ((statfs(path.c_str(), &sb)) == 0) {
-        if (sb.f_type == 40864) return -1;
-        else return 1;
-    } else return -1;
+        if (sb.f_type == 61267) return true;
+        else return false;
+    }
+    else return false;
 }
 
-AESCryptoData findInQuarantine(const std::string& prevPath, const std::unordered_set<std::string>& quarantineDb){
+AESCryptoData findInQuarantine(const std::string& prevPath, const std::vector<std::string>& quarantineDb){
     AESCryptoData aes{};
     std::array<std::string,5> quarantineData{};
     for (std::string line : quarantineDb){
@@ -189,13 +193,13 @@ AESCryptoData findInQuarantine(const std::string& prevPath, const std::unordered
     return aes;
 }
 
-void addToQuarantineDatabase(const AESCryptoData& aes, std::unordered_set<std::string>& database) {
+void addToQuarantineDatabase(const AESCryptoData& aes, std::vector<std::string>& database) {
     std::stringstream ss;
     ss<< aes.prevName << "," << aes.inQuarantineName << "," << aes.keyString << "," <<aes.ivString << ","<< static_cast<int>(aes.perms);
-    appendToDatabase(ss.str(),database);
+    appendToQuarantineDatabase(ss.str(),database);
 }
 
-bool restoreFromQuarantine(const std::string& path, const std::unordered_set<std::string>& quarantineDb){
+bool restoreFromQuarantine(const std::string& path, const std::vector<std::string>& quarantineDb){
     AESCryptoData aes = findInQuarantine(path,quarantineDb);
     if(aes.prevName.empty()){
         return false;
@@ -205,12 +209,12 @@ bool restoreFromQuarantine(const std::string& path, const std::unordered_set<std
     return true;
 }
 
-void scanAllFilesInDirectory(const std::string& path, std::unordered_set<std::string>& hashes,std::unordered_set<std::string>& quarantineDB) {
+void scanAllFilesInDirectory(const std::string& path, std::unordered_set<std::string>& hashes,std::vector<std::string>& quarantineDB) {
     int nonRegularFiles=0;
     int symlinks=0;
     long long regularFiles=0;
         for (const std::filesystem::path &directoryIteratorPath : std::filesystem::recursive_directory_iterator(path,std::filesystem::directory_options::skip_permission_denied)) {
-            if ((checkFileSystem(directoryIteratorPath) == 1) && exists(directoryIteratorPath)) {
+            if ((checkFileSystem(directoryIteratorPath)) && exists(directoryIteratorPath)) {
                 if (std::filesystem::status(directoryIteratorPath).type() == std::filesystem::file_type::regular) {
                     if (std::filesystem::is_symlink(directoryIteratorPath)) {
                         std::string pathString = std::filesystem::canonical(
@@ -243,7 +247,7 @@ void scanAllFilesInDirectory(const std::string& path, std::unordered_set<std::st
         std::cout << "Symlinks: " << symlinks << "\n";
 }
 
-void scan(const std::string& path, std::unordered_set<std::string>& hashes,std::unordered_set<std::string>& quarantineDB){
+void scan(const std::string& path, std::unordered_set<std::string>& hashes,std::vector<std::string>& quarantineDB){
     std::cout << "Work in progress...\n";
     try {
         bool isDirectory = std::filesystem::is_directory(path);
@@ -252,7 +256,7 @@ void scan(const std::string& path, std::unordered_set<std::string>& hashes,std::
         }
         else {
             const std::filesystem::path &directoryIteratorPath(path);
-            if ((checkFileSystem(directoryIteratorPath) == 1) && exists(directoryIteratorPath)) {
+            if ((checkFileSystem(directoryIteratorPath)) && exists(directoryIteratorPath)) {
                 if (std::filesystem::status(directoryIteratorPath).type() == std::filesystem::file_type::regular) {
                     if (std::filesystem::is_symlink(directoryIteratorPath)) {
                         std::string pathString = std::filesystem::canonical(
