@@ -116,10 +116,14 @@ AESCryptoData encryptFile(AESCryptoData& cryptoData,std::unordered_set<std::stri
 
     std::ifstream in{cryptoData.prevName, std::ios::binary};
     std::ofstream out{cryptoData.inQuarantineName, std::ios::binary};
-    CryptoPP::FileSource{in, /*pumpAll=*/true,
-                         new CryptoPP::StreamTransformationFilter{
-                                 cipher, new CryptoPP::FileSink{out}}};
-
+    try {
+        CryptoPP::FileSource{in, /*pumpAll=*/true,
+                             new CryptoPP::StreamTransformationFilter{
+                                     cipher, new CryptoPP::FileSink{out}}};
+    }
+    catch(const CryptoPP::Exception& exception) {
+        std::cout << "Failed encrypting file\n";
+    }
     return cryptoData;
 }
 
@@ -134,11 +138,15 @@ void decryptFile(AESCryptoData& cryptoData) {
     std::ifstream in{cryptoData.inQuarantineName, std::ios::binary};
     std::ofstream out{cryptoData.prevName, std::ios::binary};
 
-    CryptoPP::FileSource {in, /*pumpAll=*/true,
-                         new CryptoPP::StreamTransformationFilter{
-                                 cipher, new CryptoPP::FileSink{out}}};
+    try {
+        CryptoPP::FileSource{in, /*pumpAll=*/true,
+                             new CryptoPP::StreamTransformationFilter{
+                                     cipher, new CryptoPP::FileSink{out}}};
+    }
+    catch(const CryptoPP::Exception& exception) {
+        std::cout << "Failed decrypting file\n";
+    }
 }
-
 
 
 
