@@ -3,38 +3,32 @@
 //
 
 #include "../headers/crypto_functions.h"
+
+#include <iomanip>
+#include <iostream>
+
+#include <crypto++/aes.h>
+#include <cryptopp/files.h>
+#include <crypto++/filters.h>
+#include <cryptopp/hex.h>
+#include <cryptopp/md5.h>
+#include <cryptopp/modes.h>
+#include <cryptopp/osrng.h>
+
 #include "../headers/file_management.h"
 #include "../headers/main.h"
 
-#include <iostream>
-#include <iomanip>
-#include <crypto++/aes.h>
-#include <crypto++/filters.h>
-#include <cryptopp/files.h>
-#include <cryptopp/modes.h>
-#include <cryptopp/osrng.h>
-#include <cryptopp/md5.h>
-#include <cryptopp/hex.h>
-
 struct AESCryptoData;
-
-std::array<uint64_t,2> hexStringToUintArray(const std::string& hex){
-    std::array<uint64_t,2> out{};
-    std::string firstPart = hex.substr(0,16);
-    std::string secondPart = hex.substr(16,32);
-    out[0]= std::stol(firstPart);
-    out[1]= std::stol(secondPart);
-}
 
 std::string md5FileCryptoPP(const std::string& path) {
     CryptoPP::MD5 md5;
     std::string out;
     try {
-        CryptoPP::FileSource fs(path.c_str(), true /* PumpAll */,
+        CryptoPP::FileSource fs(path.c_str(), true,
                                 new CryptoPP::HashFilter(md5,
-                                                         new CryptoPP::HexEncoder(new CryptoPP::StringSink(out),
-                                                                                  false /*UCase*/) // HexEncoder) // HashFilter
-                                ));// FileSource
+                                                         new CryptoPP::HexEncoder(
+                                                                 new CryptoPP::StringSink(out),
+                                                                                  false )));
     }
     catch (CryptoPP::FileStore::OpenErr const & ex){
         std::cerr << "Failed hashing file, "<<ex.GetWhat()<<"\n";
@@ -83,9 +77,9 @@ AESCryptoData encryptFile(AESCryptoData& cryptoData,std::vector<std::string>& da
     std::ifstream in{cryptoData.prevName, std::ios::binary};
     std::ofstream out{cryptoData.inQuarantineName, std::ios::binary};
     try {
-        CryptoPP::FileSource{in, /*pumpAll=*/true,
-                             new CryptoPP::StreamTransformationFilter{
-                                     cipher, new CryptoPP::FileSink{out}}};
+        CryptoPP::FileSource{in, true,
+                             new CryptoPP::StreamTransformationFilter{cipher,
+                                                                      new CryptoPP::FileSink{out}}};
     }
     catch(const CryptoPP::Exception& exception) {
         std::cout << "Failed encrypting file\n";
@@ -105,9 +99,9 @@ void decryptFile(AESCryptoData& cryptoData) {
     std::ofstream out{cryptoData.prevName, std::ios::binary};
 
     try {
-        CryptoPP::FileSource{in, /*pumpAll=*/true,
-                             new CryptoPP::StreamTransformationFilter{
-                                     cipher, new CryptoPP::FileSink{out}}};
+        CryptoPP::FileSource{in, true,
+                             new CryptoPP::StreamTransformationFilter{cipher,
+                                                                      new CryptoPP::FileSink{out}}};
     }
     catch(const CryptoPP::Exception& exception) {
         std::cout << "Failed decrypting file\n";
