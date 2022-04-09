@@ -5,6 +5,7 @@
 #include "../headers/file_management.h"
 
 #include <sys/vfs.h>
+#include <ctime>
 
 #include <algorithm>
 #include <filesystem>
@@ -97,6 +98,17 @@ AESCryptoData quarantineAFile(const std::string& path, std::vector<std::string>&
     aes.prevName=path;
     aes.inQuarantineName = movedTo;
     aes.perms = status(std::filesystem::path(path)).permissions();
+    time_t now = time(nullptr);
+    tm* currTm;
+    currTm = localtime(&now);
+    char *date = new char[50];
+    strftime(date, 50, "%D %T", currTm);
+    std::string dateStr = date;
+    aes.date = dateStr;
+    std::cout << date << "\n";
+    std::cout << dateStr << "\n";
+    std::cout << aes.date << "\n";
+    delete[](date);
     encryptFile(aes,database);
     removeExecutePermissions(aes.inQuarantineName);
     return aes;
@@ -109,8 +121,8 @@ bool checkFile(const std::string& hash, const std::unordered_set<std::string>& h
 void analyzingFile(const std::string& pathString, std::unordered_set<std::string>& hashes, std::vector<std::string>& quarantineDB) {
     std::cout << "Analyzing: " << pathString;
     std::string hash = md5FileCryptoPP(pathString);
-    std::cout << ", hash : " << hash << "\n";
-        std:: cout << ", hash : " << hash << "\t\r" << std::flush;
+//    std::cout << ", hash : " << hash << "\n";
+    std:: cout << ", hash : " << hash << "\t\r" << std::flush;
     if (checkFile(hash, hashes)) {
         std::cout << "Found potentially malicious file: " << pathString << "\n";
         quarantineAFile(pathString, quarantineDB);
@@ -134,14 +146,14 @@ bool checkFileSystem(const std::string& path) {
 
 AESCryptoData findInQuarantine(const std::string& prevPath, const std::vector<std::string>& quarantineDb){
     AESCryptoData aes{};
-    std::array<std::string,5> quarantineData{};
+    std::array<std::string,6> quarantineData{};
     for (std::string line : quarantineDb){
         int start = 0;
         int delimiter = line.find_first_of(',');
         std::string temp = line.substr(start,delimiter);
         if (temp == prevPath){
             quarantineData[0]=temp;
-            for (int i = 1; i<5; i++){
+            for (int i = 1; i<6; i++){
                 line = line.erase(start,delimiter+1);
                 delimiter = line.find_first_of(',');
                 quarantineData[i]=line.substr(start,delimiter);
@@ -155,12 +167,14 @@ AESCryptoData findInQuarantine(const std::string& prevPath, const std::vector<st
     aes.keyString=quarantineData[2];
     aes.ivString=quarantineData[3];
     aes.perms= static_cast<std::filesystem::perms>(std::stoi(quarantineData[4]));
+    aes.date = quarantineData[5];
     return aes;
 }
 
 void addToQuarantineDatabase(const AESCryptoData& aes, std::vector<std::string>& database) {
     std::stringstream ss;
-    ss<< aes.prevName << "," << aes.inQuarantineName << "," << aes.keyString << "," <<aes.ivString << ","<< static_cast<int>(aes.perms);
+    std::cout << aes.date << "\n";
+    ss<< aes.prevName << "," << aes.inQuarantineName << "," << aes.keyString << "," <<aes.ivString<<","<< static_cast<int>(aes.perms)<<","<<aes.date;
     appendToQuarantineDatabase(ss.str(),database);
 }
 
@@ -281,6 +295,26 @@ void scan(const std::string& path, std::unordered_set<std::string>& hashes,std::
         } else std::cout << "File: "<< directoryIteratorPath << " cannot be read due to filesystem problems\n";
     }
 }
+std::string prepareQuarantineLine(std::string& line){
+    std::array<std::string,6> quarantineData{};
+    int start = 0;
+    int delimiter;
+    for (int i = 0; i<6; i++){
+        delimiter = line.find_first_of(',');
+        quarantineData[i]=line.substr(start,delimiter);
+        line = line.erase(start,delimiter+1);
+    }
+    std::stringstream ss{};
+    ss<< "Quarantined file: " << quarantineData[0] << " as: " << quarantineData[1] << ", date: " << quarantineData[5];
+    return ss.str();
+}
+
+void printQuarantineDatabase(const std::vector<std::string>& database){
+    for (std::string line : database){
+        std::cout << prepareQuarantineLine(line) << "\n";
+    }
+}
+
 
 
 

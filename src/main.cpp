@@ -24,6 +24,7 @@ int main(int argc, char **argv) {
 
     auto scanOpt=app.add_subcommand("scan", "Scan given path");
     auto restoreOpt=app.add_subcommand("restore", "Restore file from quarantine");
+    auto showOpt = app.add_subcommand("show", "Show quarantined files");
 
     std::string scanFileName{};
     scanOpt -> add_option("--path",scanFileName,"Path to file/directory we want to scan")
@@ -39,7 +40,7 @@ int main(int argc, char **argv) {
     restoreOpt -> add_option("--path",restoreFileName,"Path to file we want to restore");
 
     CLI11_PARSE(app, argc, argv)
-    if(!(*scanOpt || *restoreOpt)){
+    if(!(*scanOpt || *restoreOpt || *showOpt)){
         std::cout << "Subcommand is obligatory, type --help for more information\n";
     }
     if(*scanOpt){
@@ -118,6 +119,17 @@ int main(int argc, char **argv) {
             std::cout << ex.what() << "\n";
             return EXIT_FAILURE;
         }
+    }
+    if(*showOpt){
+        if (std::filesystem::exists(quarantineDir) && std::filesystem::exists(quarantineDatabase)) {
+            std::vector<std::string> quarantineDatabaseDB = readQuarantineDatabase(quarantineDatabase);
+            printQuarantineDatabase(quarantineDatabaseDB);
+        }
+        else {
+            std::cerr << "Quarantine database: " << quarantineDatabase << " does not exist!";
+            return EXIT_FAILURE;
+        }
+
     }
     return EXIT_SUCCESS;
 }

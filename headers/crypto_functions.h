@@ -2,6 +2,8 @@
 // Created by kozzi on 3/9/22.
 //
 
+#include <ctime>
+
 #include <filesystem>
 #include <iostream>
 #include <string>
@@ -16,6 +18,7 @@ struct AESCryptoData {
     std::string keyString;
     std::string ivString;
     std::filesystem::perms perms;
+    std::string date;
 };
 
 std::string md5FileCryptoPP(const std::string& path);
