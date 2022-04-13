@@ -20,6 +20,27 @@
 bool findInUnorderedSet(const std::string& value, const std::unordered_set<std::string>& unorderedSet) {
     return unorderedSet.find(value) != unorderedSet.end();
 }
+void makeQuarantineDatabaseAvailable(){
+    try{
+        std::filesystem::permissions(quarantineDatabase,std::filesystem::perms::owner_read | std::filesystem::perms::owner_write |
+                                                        std::filesystem::perms::group_read | std::filesystem::perms::group_write |
+                                                        std::filesystem::perms::others_read,std::filesystem::perm_options::replace);
+    }
+    catch(std::filesystem::filesystem_error const& ex) {
+        std::cerr << "Cannot open quarantine database in: " << quarantineDatabase << "\n";
+    }
+}
+void makeQuarantineDatabaseUnavailable(){
+    try{
+        std::filesystem::permissions(quarantineDatabase,std::filesystem::perms::owner_read |
+                                                        std::filesystem::perms::group_read |
+                                                        std::filesystem::perms::others_read,std::filesystem::perm_options::replace);
+    }
+    catch(std::filesystem::filesystem_error const& ex) {
+        std::cerr << "Cannot close quarantine database in: " << quarantineDatabase << "\n";
+    }
+}
+
 
 std::string renameFileToAvoidConflicts() {
     std::string temp;
@@ -36,11 +57,13 @@ std::string renameFileToAvoidConflicts() {
 
 void saveToQuarantineDatabase(const std::vector<std::string>& database) {
     std::ofstream outputFile;
+    makeQuarantineDatabaseAvailable();
     outputFile.open(quarantineDatabase, std::ios_base::out);
     for (const std::string& line : database){
         outputFile << line +"\n";
     }
     outputFile.close();
+    makeQuarantineDatabaseUnavailable();
 }
 
 void appendToQuarantineDatabase(const std::string& input, std::vector<std::string>& database) {
@@ -68,7 +91,8 @@ std::unordered_set<std::string> readDatabaseToUnorderedSet(const std::string& pa
     std::unordered_set<std::string> output;
     std::ifstream inputFile(path,std::ios::out);
     if (!inputFile) {
-        std::cerr << "Error, cannot load database from: " << path << "\n";
+        std::string ex= "Error, cannot load database from: " + path + "\n";
+        throw std::filesystem::filesystem_error(ex, std::error_code());
     }
     else {
         std::string temp;
@@ -105,9 +129,6 @@ AESCryptoData quarantineAFile(const std::string& path, std::vector<std::string>&
     strftime(date, 50, "%D %T", currTm);
     std::string dateStr = date;
     aes.date = dateStr;
-    std::cout << date << "\n";
-    std::cout << dateStr << "\n";
-    std::cout << aes.date << "\n";
     delete[](date);
     encryptFile(aes,database);
     removeExecutePermissions(aes.inQuarantineName);
@@ -121,8 +142,10 @@ bool checkFile(const std::string& hash, const std::unordered_set<std::string>& h
 void analyzingFile(const std::string& pathString, std::unordered_set<std::string>& hashes, std::vector<std::string>& quarantineDB) {
     std::cout << "Analyzing: " << pathString;
     std::string hash = md5FileCryptoPP(pathString);
-//    std::cout << ", hash : " << hash << "\n";
-    std:: cout << ", hash : " << hash << "\t\r" << std::flush;
+    std::cout << ", hash : " << hash << "\n";
+//    std:: cout << ", hash : " << hash << "\t \r" << std::flush;
+//    printf("\x1b[2K");
+
     if (checkFile(hash, hashes)) {
         std::cout << "Found potentially malicious file: " << pathString << "\n";
         quarantineAFile(pathString, quarantineDB);
@@ -184,6 +207,12 @@ bool restoreFromQuarantine(const std::string& path,std::vector<std::string>& qua
         return false;
     }
     decryptFile(aes);
+    try{
+        std::filesystem::remove(aes.inQuarantineName);
+    }catch(std::filesystem::filesystem_error const& ex){
+        return false;
+    }
+
     std::string toRemove{};
     for (const std::string& line : quarantineDb){
         int delimiter = line.find_first_of(',');
@@ -219,7 +248,7 @@ void scanAllFilesInDirectory(const std::string& path, std::unordered_set<std::st
                                             directoryIteratorPath.filename().u8string()));
                         }
                         catch(std::filesystem::filesystem_error const& ex) {
-                            std::cerr << "Cannot create canonical path of: "<< directoryIteratorPath<< "\n";
+//                            std::cerr << "Cannot create canonical path of: "<< directoryIteratorPath<< "\n";
                             continue;
                         }
                         if (std::filesystem::status(pathString).type() == std::filesystem::file_type::regular) {
@@ -244,7 +273,6 @@ void scanAllFilesInDirectory(const std::string& path, std::unordered_set<std::st
                     nonRegularFiles++;
                 }
             } else {
-                std::cout << "File: "<< directoryIteratorPath << " cannot be read due to filesystem problems\n";
                 nonRegularFiles++;
             }
         }

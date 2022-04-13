@@ -14,6 +14,10 @@
 
 bool findInUnorderedSet(const std::string& value, const std::unordered_set<std::string>& unorderedSet);
 
+void makeQuarantineDatabaseAvailable();
+
+void makeQuarantineDatabaseUnavailable();
+
 std::string renameFileToAvoidConflicts();
 
 void appendToQuarantineDatabase(const std::string& input, std::vector<std::string>& database);
@@ -37,5 +41,7 @@ bool restoreFromQuarantine(const std::string& path, std::vector<std::string>& qu
 void scan(const std::string& path, std::unordered_set<std::string>& hashes,std::vector<std::string>& quarantineDB);
 
 void printQuarantineDatabase(const std::vector<std::string>& database);
+
+void saveToQuarantineDatabase(const std::vector<std::string>& database);
 
 #endif //FILE_MANAGEMENT_H
