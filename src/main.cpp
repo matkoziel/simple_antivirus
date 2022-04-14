@@ -21,7 +21,7 @@ void terminateProgram(int inputSignal){
     signal(inputSignal,SIG_IGN);
     std::cout << "\nDo you really want to quit? [Y/N]\n";
     std::cin.read(&input,sizeof(char));
-    if(input=='y'||input=='Y'){
+    if(input=='y'||input=='Y'||input=='T'||input=='t'){
         throw std::runtime_error("EXIT!");
     }
     else{
@@ -34,9 +34,9 @@ int main(int argc, char **argv) {
     quarantineDir= getenv("HOME");
     quarantineDir=quarantineDir.append("/.quarantine");
     quarantineDatabase=quarantineDir +"/.quarantine_database.csv";
-    signal(SIGINT,terminateProgram);
     std::vector<std::string> quarantineDatabaseDB{};
     try{
+        signal(SIGINT,terminateProgram);
         CLI::App app{"Simple antivirus"};
 
         auto scanOpt=app.add_subcommand("scan", "Scan given path");

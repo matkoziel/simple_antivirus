@@ -12,14 +12,20 @@
 #include <fstream>
 #include <iostream>
 #include <unordered_set>
+#include <cryptopp/files.h>
 
 #include "../headers/crypto_functions.h"
 #include "../headers/main.h"
 
 
+// Finds given value in unordered set, time complexity- O(n) in worst case, compares hashed value with hashed values in
+// unordered set.
+// Return true if value is in given structure
 bool findInUnorderedSet(const std::string& value, const std::unordered_set<std::string>& unorderedSet) {
     return unorderedSet.find(value) != unorderedSet.end();
 }
+
+
 void makeQuarantineDatabaseAvailable(){
     try{
         std::filesystem::permissions(quarantineDatabase,std::filesystem::perms::owner_read | std::filesystem::perms::owner_write |
@@ -140,11 +146,16 @@ bool checkFile(const std::string& hash, const std::unordered_set<std::string>& h
 }
 
 void analyzingFile(const std::string& pathString, std::unordered_set<std::string>& hashes, std::vector<std::string>& quarantineDB) {
+    std::string hash{};
     std::cout << "Analyzing: " << pathString;
-    std::string hash = md5FileCryptoPP(pathString);
-    std::cout << ", hash : " << hash << "\n";
-//    std:: cout << ", hash : " << hash << "\t \r" << std::flush;
-//    printf("\x1b[2K");
+    try {
+        hash = md5FileCryptoPP(pathString);
+    }
+    catch (CryptoPP::FileStore::OpenErr const & ex){
+        std::cerr << "Failed hashing file, "<<ex.GetWhat()<<"\n";
+    }
+//    std::cout << ", hash : " << hash << "\n";
+    std:: cout << ", hash : " << hash <<"\t\r" << std::flush;
 
     if (checkFile(hash, hashes)) {
         std::cout << "Found potentially malicious file: " << pathString << "\n";
@@ -196,7 +207,6 @@ AESCryptoData findInQuarantine(const std::string& prevPath, const std::vector<st
 
 void addToQuarantineDatabase(const AESCryptoData& aes, std::vector<std::string>& database) {
     std::stringstream ss;
-    std::cout << aes.date << "\n";
     ss<< aes.prevName << "," << aes.inQuarantineName << "," << aes.keyString << "," <<aes.ivString<<","<< static_cast<int>(aes.perms)<<","<<aes.date;
     appendToQuarantineDatabase(ss.str(),database);
 }
@@ -257,7 +267,7 @@ void scanAllFilesInDirectory(const std::string& path, std::unordered_set<std::st
                                 symlinks++;
                             }
                         } else {
-                            std::cout << "Resolved symlink "<<pathString<<"is not regular file\n";
+//                            std::cout << "Resolved symlink "<<pathString<<"is not regular file\n";
                             nonRegularFiles++;
                         }
 
@@ -269,14 +279,14 @@ void scanAllFilesInDirectory(const std::string& path, std::unordered_set<std::st
                         }
                     }
                 } else {
-                    std::cout << "File: "<< directoryIteratorPath <<" is not a regular file\n";
+//                    std::cout << "File: "<< directoryIteratorPath <<" is not a regular file\n";
                     nonRegularFiles++;
                 }
             } else {
                 nonRegularFiles++;
             }
         }
-        std::cout << "Scanned: \n";
+        std::cout << "\nScanned: \n";
         std::cout << "Regular files: " << regularFiles << "\n";
         std::cout << "Non regular files: " << nonRegularFiles << "\n";
         std::cout << "Symlinks: " << symlinks << "\n";

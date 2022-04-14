@@ -23,16 +23,11 @@ struct AESCryptoData;
 std::string md5FileCryptoPP(const std::string& path) {
     CryptoPP::MD5 md5;
     std::string out;
-    try {
-        CryptoPP::FileSource fs(path.c_str(), true,
-                                new CryptoPP::HashFilter(md5,
-                                                         new CryptoPP::HexEncoder(
-                                                                 new CryptoPP::StringSink(out),
-                                                                                  false )));
-    }
-    catch (CryptoPP::FileStore::OpenErr const & ex){
-        std::cerr << "Failed hashing file, "<<ex.GetWhat()<<"\n";
-    }
+    CryptoPP::FileSource fs(path.c_str(), true,
+                            new CryptoPP::HashFilter(md5,
+                                                     new CryptoPP::HexEncoder(
+                                                             new CryptoPP::StringSink(out),
+                                                                              false )));
     return out;
 }
 
