@@ -2,7 +2,7 @@
 // Created by kozzi on 3/9/22.
 //
 
-#include "../headers/file_management.h"
+#include "../headers/file_functions.h"
 
 #include <sys/vfs.h>
 #include <ctime>
@@ -12,18 +12,8 @@
 #include <fstream>
 #include <iostream>
 #include <unordered_set>
-#include <cryptopp/files.h>
 
-#include "../headers/crypto_functions.h"
 #include "../headers/main.h"
-
-
-// Finds given value in unordered set, time complexity- O(n) in worst case, compares hashed value with hashed values in
-// unordered set.
-// Return true if value is in given structure
-bool findInUnorderedSet(const std::string& value, const std::unordered_set<std::string>& unorderedSet) {
-    return unorderedSet.find(value) != unorderedSet.end();
-}
 
 
 void makeQuarantineDatabaseAvailable(){
@@ -36,6 +26,7 @@ void makeQuarantineDatabaseAvailable(){
         std::cerr << "Cannot open quarantine database in: " << quarantineDatabase << "\n";
     }
 }
+
 void makeQuarantineDatabaseUnavailable(){
     try{
         std::filesystem::permissions(quarantineDatabase,std::filesystem::perms::owner_read |
@@ -46,7 +37,6 @@ void makeQuarantineDatabaseUnavailable(){
         std::cerr << "Cannot close quarantine database in: " << quarantineDatabase << "\n";
     }
 }
-
 
 std::string renameFileToAvoidConflicts() {
     std::string temp;
@@ -70,11 +60,6 @@ void saveToQuarantineDatabase(const std::vector<std::string>& database) {
     }
     outputFile.close();
     makeQuarantineDatabaseUnavailable();
-}
-
-void appendToQuarantineDatabase(const std::string& input, std::vector<std::string>& database) {
-    database.insert(database.begin(),input);
-    saveToQuarantineDatabase(database);
 }
 
 std::vector<std::string> readQuarantineDatabase(const std::string& path){
@@ -145,30 +130,6 @@ bool checkFile(const std::string& hash, const std::unordered_set<std::string>& h
     return findInUnorderedSet(hash, hashes);
 }
 
-void analyzingFile(const std::string& pathString, std::unordered_set<std::string>& hashes, std::vector<std::string>& quarantineDB) {
-    std::string hash{};
-    std::cout << "Analyzing: " << pathString;
-    try {
-        hash = md5FileCryptoPP(pathString);
-    }
-    catch (CryptoPP::FileStore::OpenErr const & ex){
-        std::cerr << "Failed hashing file, "<<ex.GetWhat()<<"\n";
-    }
-//    std::cout << ", hash : " << hash << "\n";
-    std:: cout << ", hash : " << hash <<"\t\r" << std::flush;
-
-    if (checkFile(hash, hashes)) {
-        std::cout << "Found potentially malicious file: " << pathString << "\n";
-        quarantineAFile(pathString, quarantineDB);
-        try {
-            std::filesystem::remove(pathString);
-        }
-        catch (std::filesystem::filesystem_error const &ex) {
-            std::cerr << ex.code().message() << ": " << pathString << "\n";
-        }
-    }
-}
-
 bool checkFileSystem(const std::string& path) {
     struct statfs sb{};
     if ((statfs(path.c_str(), &sb)) == 0) {
@@ -205,12 +166,6 @@ AESCryptoData findInQuarantine(const std::string& prevPath, const std::vector<st
     return aes;
 }
 
-void addToQuarantineDatabase(const AESCryptoData& aes, std::vector<std::string>& database) {
-    std::stringstream ss;
-    ss<< aes.prevName << "," << aes.inQuarantineName << "," << aes.keyString << "," <<aes.ivString<<","<< static_cast<int>(aes.perms)<<","<<aes.date;
-    appendToQuarantineDatabase(ss.str(),database);
-}
-
 bool restoreFromQuarantine(const std::string& path,std::vector<std::string>& quarantineDb){
     AESCryptoData aes = findInQuarantine(path,quarantineDb);
     if(aes.prevName.empty()){
@@ -243,96 +198,7 @@ bool restoreFromQuarantine(const std::string& path,std::vector<std::string>& qua
         return false;
 }
 
-void scanAllFilesInDirectory(const std::string& path, std::unordered_set<std::string>& hashes,std::vector<std::string>& quarantineDB) {
-    int nonRegularFiles=0;
-    int symlinks=0;
-    long long regularFiles=0;
-        for (const std::filesystem::path &directoryIteratorPath : std::filesystem::recursive_directory_iterator(path,std::filesystem::directory_options::skip_permission_denied)) {
-            if ((checkFileSystem(directoryIteratorPath))) {
-                if (std::filesystem::status(directoryIteratorPath).type() == std::filesystem::file_type::regular) {
-                    if (std::filesystem::is_symlink(directoryIteratorPath)) {
-                        std::string pathString{};
-                        try {
-                            pathString = std::filesystem::canonical(
-                                    directoryIteratorPath.parent_path().append(
-                                            directoryIteratorPath.filename().u8string()));
-                        }
-                        catch(std::filesystem::filesystem_error const& ex) {
-//                            std::cerr << "Cannot create canonical path of: "<< directoryIteratorPath<< "\n";
-                            continue;
-                        }
-                        if (std::filesystem::status(pathString).type() == std::filesystem::file_type::regular) {
-                            if (!std::filesystem::is_empty(pathString)) {
-                                analyzingFile(pathString, hashes,quarantineDB);
-                                symlinks++;
-                            }
-                        } else {
-//                            std::cout << "Resolved symlink "<<pathString<<"is not regular file\n";
-                            nonRegularFiles++;
-                        }
 
-                    } else {
-                        std::string pathString{directoryIteratorPath.u8string()};
-                        if (!std::filesystem::is_empty(pathString)) {
-                            analyzingFile(pathString, hashes,quarantineDB);
-                            regularFiles++;
-                        }
-                    }
-                } else {
-//                    std::cout << "File: "<< directoryIteratorPath <<" is not a regular file\n";
-                    nonRegularFiles++;
-                }
-            } else {
-                nonRegularFiles++;
-            }
-        }
-        std::cout << "\nScanned: \n";
-        std::cout << "Regular files: " << regularFiles << "\n";
-        std::cout << "Non regular files: " << nonRegularFiles << "\n";
-        std::cout << "Symlinks: " << symlinks << "\n";
-}
-
-void scan(const std::string& path, std::unordered_set<std::string>& hashes,std::vector<std::string>& quarantineDB){
-    std::cout << "Work in progress...\n";
-    bool isDirectory = std::filesystem::is_directory(path);
-    if(isDirectory){
-        scanAllFilesInDirectory(path,hashes,quarantineDB);
-    }
-    else {
-        const std::filesystem::path &directoryIteratorPath(path);
-        if ((checkFileSystem(directoryIteratorPath))) {
-            if (std::filesystem::status(directoryIteratorPath).type() == std::filesystem::file_type::regular) {
-                if (std::filesystem::is_symlink(directoryIteratorPath)) {
-                    std::string pathString{};
-                    try {
-                        pathString = std::filesystem::canonical(
-                                directoryIteratorPath.parent_path().append(
-                                        directoryIteratorPath.filename().u8string()));
-                    }
-                    catch(std::filesystem::filesystem_error const& ex) {
-                        std::cerr << "Cannot create canonical path of: "<< path<< "\n";
-                        return;
-                    }
-                    if (std::filesystem::status(pathString).type() == std::filesystem::file_type::regular) {
-                        if (!std::filesystem::is_empty(pathString)) {
-                            analyzingFile(pathString, hashes,quarantineDB);
-                        }
-                    } else {
-                        std::cout << "Resolved symlink "<<pathString<<"is not regular file\n";
-                    }
-
-                } else {
-                    std::string pathString{directoryIteratorPath.u8string()};
-                    if (!std::filesystem::is_empty(pathString)) {
-                        analyzingFile(pathString, hashes,quarantineDB);
-                    }
-                }
-            } else {
-                std::cout << "File: "<< directoryIteratorPath <<" is not a regular file\n";
-            }
-        } else std::cout << "File: "<< directoryIteratorPath << " cannot be read due to filesystem problems\n";
-    }
-}
 std::string prepareQuarantineLine(std::string& line){
     std::array<std::string,6> quarantineData{};
     int start = 0;

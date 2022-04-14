@@ -11,7 +11,8 @@
 #include "../libs/CLI11.hpp"
 
 #include "../headers/crypto_functions.h"
-#include "../headers/file_management.h"
+#include "../headers/file_functions.h"
+#include "../headers/scan.h"
 
 std::string quarantineDir;
 std::string quarantineDatabase;
@@ -61,11 +62,11 @@ int main(int argc, char **argv) {
         }
         if(*scanOpt){
             if(!*d) {
-                hashDatabaseStr="../data/database.csv";
+                hashDatabaseStr="../data/example_database.csv";
             }
             std::unordered_set<std::string> hashDatabase{};
-            bool quarantineDirExist{false};
-            bool quarantineDatabaseExist{false};
+            bool quarantineDirExist{};
+            bool quarantineDatabaseExist{};
             makeQuarantineDatabaseAvailable();
             try{
                 quarantineDirExist = std::filesystem::exists(quarantineDir);
@@ -186,8 +187,8 @@ int main(int argc, char **argv) {
             }
         }
         if(*showOpt){
-            bool quarantineDirExist{false};
-            bool quarantineDatabaseExist{false};
+            bool quarantineDirExist{};
+            bool quarantineDatabaseExist{};
             makeQuarantineDatabaseAvailable();
             try{
                 quarantineDirExist = std::filesystem::exists(quarantineDir);
