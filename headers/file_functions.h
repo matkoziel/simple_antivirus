@@ -12,28 +12,28 @@
 #include "crypto_functions.h"
 
 
-void makeQuarantineDatabaseAvailable();
+void MakeQuarantineDatabaseAvailable();
 
-void makeQuarantineDatabaseUnavailable();
+void MakeQuarantineDatabaseUnavailable();
 
-std::string renameFileToAvoidConflicts();
+std::string RenameFileToAvoidConflicts();
 
-std::unordered_set<std::string> readDatabaseToUnorderedSet(const std::string& path);
+std::unordered_set<std::string> ReadDatabaseToUnorderedSet(const std::string& path);
 
-std::vector<std::string> readQuarantineDatabase(const std::string& path);
+std::vector<std::string> ReadQuarantineDatabase(const std::string& path);
 
-AESCryptoData quarantineAFile(const std::string& path, std::vector<std::string>& database);
+QuarantineData QuarantineAFile(const std::string& path, std::vector<std::string>& database);
 
-void removeExecutePermissions(const std::string& path);
+void RemoveExecutePermissions(const std::string& path);
 
-bool checkFile(const std::string& hash, const std::unordered_set<std::string>& hashes);
+bool CheckFile(const std::string& hash, const std::unordered_set<std::string>& hashes);
 
-bool checkFileSystem(const std::string& path);
+bool CheckFileSystem(const std::string& path);
 
-bool restoreFromQuarantine(const std::string& path, std::vector<std::string>& quarantineDb);
+bool RestoreFromQuarantine(const std::string& path, std::vector<std::string>& quarantineDb);
 
-void printQuarantineDatabase(const std::vector<std::string>& database);
+void PrintQuarantineDatabase(const std::vector<std::string>& database);
 
-void saveToQuarantineDatabase(const std::vector<std::string>& database);
+void SaveToQuarantineDatabase(const std::vector<std::string>& database);
 
 #endif //SIMPLE_ANTIVIRUS_FILE_FUNCTIONS_H

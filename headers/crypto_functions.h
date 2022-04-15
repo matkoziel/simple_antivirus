@@ -14,10 +14,10 @@
 
 #include "../headers/data_functions.h"
 
-std::string md5FileCryptoPP(const std::string& path);
+std::string MD5FileCryptoPP(const std::string& path);
 
-AESCryptoData encryptFile(AESCryptoData& cryptoData,std::vector<std::string>& database);
+QuarantineData EncryptFile(QuarantineData& cryptoData, std::vector<std::string>& database);
 
-void decryptFile(AESCryptoData& cryptoData);
+void DecryptFile(QuarantineData& cryptoData);
 
 #endif //SIMPLE_ANTIVIRUS_CRYPTO_FUNCTIONS_H

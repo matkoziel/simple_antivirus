@@ -9,7 +9,7 @@
 #include <unordered_set>
 #include <vector>
 
-void scan(const std::string& path, std::unordered_set<std::string>& hashes,std::vector<std::string>& quarantineDB);
+void Scan(const std::string& path, std::unordered_set<std::string>& hashes, std::vector<std::string>& quarantineDB);
 
 
 #endif //SIMPLE_ANTIVIRUS_SCAN_H

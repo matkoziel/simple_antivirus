@@ -11,24 +11,26 @@
 
 #include "../headers/file_functions.h"
 
-// Finds given value in unordered set, time complexity- O(n) in worst case, compares hashed value with hashed values in
-// unordered set.
+// Finds given value in unordered set, time complexity- O(n) in worst case, compares hashed value with hashed values in unordered set.
 // Return true if value is in given structure
-bool findInUnorderedSet(const std::string& value, const std::unordered_set<std::string>& unorderedSet) {
+bool FindInUnorderedSet(const std::string& value, const std::unordered_set<std::string>& unorderedSet) {
     return unorderedSet.find(value) != unorderedSet.end();
 }
 
-void appendToQuarantineDatabase(const std::string& input, std::vector<std::string>& database) {
+// Appends given input at the beginning of given vector
+void AppendToQuarantineDatabase(const std::string& input, std::vector<std::string>& database) {
     database.insert(database.begin(),input);
-    saveToQuarantineDatabase(database);
+    SaveToQuarantineDatabase(database);
 }
 
-void addToQuarantineDatabase(const AESCryptoData& aes, std::vector<std::string>& database) {
+// Changes QuarantineData to csv line and appends csv line to vrctor
+void AddToQuarantineDatabase(const QuarantineData& aes, std::vector<std::string>& database) {
     std::stringstream ss;
     ss<< aes.prevName << "," << aes.inQuarantineName << "," << aes.keyString << "," <<aes.ivString<<","<< static_cast<int>(aes.perms)<<","<<aes.date;
-    appendToQuarantineDatabase(ss.str(),database);
+    AppendToQuarantineDatabase(ss.str(), database);
 }
 
+// Changes byte array to hex string
 std::string AESBytesToString(const std::array<std::byte, 16>& in) {
     std::stringstream ss;
     ss << std::hex << std::setfill('0');
@@ -38,6 +40,7 @@ std::string AESBytesToString(const std::array<std::byte, 16>& in) {
     return ss.str();
 }
 
+// Changes hex string to array of bytes
 std::array<std::byte, 16> AESHexStringToBytes(const std::string& in) {
     std::array<std::byte, 16> out{};
     std::stringstream converter;
@@ -51,4 +54,3 @@ std::array<std::byte, 16> AESHexStringToBytes(const std::string& in) {
     }
     return out;
 }
-

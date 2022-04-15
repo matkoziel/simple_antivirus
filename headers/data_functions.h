@@ -11,7 +11,14 @@
 #include <unordered_set>
 #include <vector>
 
-struct AESCryptoData {
+// Structure containing one row of quarantine database:
+//      -prevName- full path of file before moving to quarantine
+//      -inQuarantineName- full path of file in quarantine
+//      -keyString- AES128 key in hex
+//      -ivString- AES128 iv in hex
+//      -perms- permissions before moving to quarantine
+//      -date- date of moving to quarantine
+struct QuarantineData {
     std::string prevName;
     std::string inQuarantineName;
     std::string keyString;
@@ -24,13 +31,13 @@ std::string AESBytesToString(const std::array<std::byte, 16>& in);
 
 std::array<std::byte, 16> AESHexStringToBytes(const std::string& in);
 
-bool findInUnorderedSet(const std::string& value, const std::unordered_set<std::string>& unorderedSet);
+bool FindInUnorderedSet(const std::string& value, const std::unordered_set<std::string>& unorderedSet);
 
-void appendToQuarantineDatabase(const std::string& input, std::vector<std::string>& database);
+void AppendToQuarantineDatabase(const std::string& input, std::vector<std::string>& database);
 
-AESCryptoData findInQuarantine(const std::string& prevPath, const std::vector<std::string>& quarantineDb);
+QuarantineData FindInQuarantine(const std::string& prevPath, const std::vector<std::string>& quarantineDb);
 
-void addToQuarantineDatabase(const AESCryptoData& aes, std::vector<std::string>& database);
+void AddToQuarantineDatabase(const QuarantineData& aes, std::vector<std::string>& database);
 
 
 #endif //SIMPLE_ANTIVIRUS_DATA_FUNCTIONS_H

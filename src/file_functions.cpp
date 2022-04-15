@@ -5,18 +5,19 @@
 #include "../headers/file_functions.h"
 
 #include <sys/vfs.h>
-#include <ctime>
 
 #include <algorithm>
+#include <ctime>
 #include <filesystem>
-#include <fstream>
 #include <iostream>
 #include <unordered_set>
 
+#include <cryptopp/files.h>
+
 #include "../headers/main.h"
 
-
-void makeQuarantineDatabaseAvailable(){
+// Changes permissions quarantine database, and allows to read and write
+void MakeQuarantineDatabaseAvailable(){
     try{
         std::filesystem::permissions(quarantineDatabase,std::filesystem::perms::owner_read | std::filesystem::perms::owner_write |
                                                         std::filesystem::perms::group_read | std::filesystem::perms::group_write |
@@ -27,18 +28,18 @@ void makeQuarantineDatabaseAvailable(){
     }
 }
 
-void makeQuarantineDatabaseUnavailable(){
+// Changes permissions of quarantine database to 000
+void MakeQuarantineDatabaseUnavailable(){
     try{
-        std::filesystem::permissions(quarantineDatabase,std::filesystem::perms::owner_read |
-                                                        std::filesystem::perms::group_read |
-                                                        std::filesystem::perms::others_read,std::filesystem::perm_options::replace);
+        std::filesystem::permissions(quarantineDatabase,std::filesystem::perms::none,std::filesystem::perm_options::replace);
     }
     catch(std::filesystem::filesystem_error const& ex) {
         std::cerr << "Cannot close quarantine database in: " << quarantineDatabase << "\n";
     }
 }
 
-std::string renameFileToAvoidConflicts() {
+// Renames file to unique quarantine filename
+std::string RenameFileToAvoidConflicts() {
     std::string temp;
     temp.append(quarantineDir);
     temp.append("/malicious_file");
@@ -51,18 +52,20 @@ std::string renameFileToAvoidConflicts() {
     return temp;
 }
 
-void saveToQuarantineDatabase(const std::vector<std::string>& database) {
+// Saves file line by line
+void SaveToQuarantineDatabase(const std::vector<std::string>& database) {
     std::ofstream outputFile;
-    makeQuarantineDatabaseAvailable();
+    MakeQuarantineDatabaseAvailable();
     outputFile.open(quarantineDatabase, std::ios_base::out);
     for (const std::string& line : database){
         outputFile << line +"\n";
     }
     outputFile.close();
-    makeQuarantineDatabaseUnavailable();
+    MakeQuarantineDatabaseUnavailable();
 }
 
-std::vector<std::string> readQuarantineDatabase(const std::string& path){
+// Reads quarantine database to vector
+std::vector<std::string> ReadQuarantineDatabase(const std::string& path){
     std::vector<std::string> out{};
     std::ifstream inputFile(path,std::ios::out);
     if (!inputFile) {
@@ -78,7 +81,8 @@ std::vector<std::string> readQuarantineDatabase(const std::string& path){
     return out;
 }
 
-std::unordered_set<std::string> readDatabaseToUnorderedSet(const std::string& path) {
+// Reads given database of hashes to unordered set
+std::unordered_set<std::string> ReadDatabaseToUnorderedSet(const std::string& path) {
     std::unordered_set<std::string> output;
     std::ifstream inputFile(path,std::ios::out);
     if (!inputFile) {
@@ -95,7 +99,8 @@ std::unordered_set<std::string> readDatabaseToUnorderedSet(const std::string& pa
     return output;
 }
 
-void removeExecutePermissions(const std::string& path) {
+// Changes permissions of given file to 664
+void RemoveExecutePermissions(const std::string& path) {
     if(exists(std::filesystem::path(path))){
         std::filesystem::permissions(path,std::filesystem::perms::owner_read | std::filesystem::perms::owner_write |
                                           std::filesystem::perms::group_read | std::filesystem::perms::group_write |
@@ -107,30 +112,40 @@ void removeExecutePermissions(const std::string& path) {
     }
 }
 
-AESCryptoData quarantineAFile(const std::string& path, std::vector<std::string>& database) {
-    AESCryptoData aes{};
-    std::string movedTo = renameFileToAvoidConflicts();
-    aes.prevName=path;
-    aes.inQuarantineName = movedTo;
-    aes.perms = status(std::filesystem::path(path)).permissions();
+// Quarantine realisation
+QuarantineData QuarantineAFile(const std::string& path, std::vector<std::string>& database) {
+    QuarantineData qDB{};
+    std::string movedTo = RenameFileToAvoidConflicts();
+    qDB.prevName=path;
+    qDB.inQuarantineName = movedTo;
+    qDB.perms = status(std::filesystem::path(path)).permissions();
     time_t now = time(nullptr);
     tm* currTm;
-    currTm = localtime(&now);
+    currTm = localtime(&now);                                           // Gets current date and time
     char *date = new char[50];
-    strftime(date, 50, "%D %T", currTm);
+    strftime(date, 50, "%D %T", currTm);                 // Date formatting
     std::string dateStr = date;
-    aes.date = dateStr;
+    qDB.date = dateStr;
     delete[](date);
-    encryptFile(aes,database);
-    removeExecutePermissions(aes.inQuarantineName);
-    return aes;
+    try{
+        EncryptFile(qDB, database);                                     // Encryption
+    }catch (CryptoPP::FileStore::OpenErr const & ex){
+        std::cerr << "Failed encrypting file, "<<ex.GetWhat()<<"\n";
+    }
+    catch (CryptoPP::FileStore::ReadErr const & ex){
+        std::cerr << "Failed encrypting file, "<<ex.GetWhat()<<"\n";
+    }
+    RemoveExecutePermissions(qDB.inQuarantineName);                      // Removes execute permissions
+    return qDB;
 }
 
-bool checkFile(const std::string& hash, const std::unordered_set<std::string>& hashes) {
-    return findInUnorderedSet(hash, hashes);
+// Checks if given hash is in hash database
+bool CheckFile(const std::string& hash, const std::unordered_set<std::string>& hashes) {
+    return FindInUnorderedSet(hash, hashes);
 }
 
-bool checkFileSystem(const std::string& path) {
+// Checks if given path filesystem is EXT4
+bool CheckFileSystem(const std::string& path) {
     struct statfs sb{};
     if ((statfs(path.c_str(), &sb)) == 0) {
         if (sb.f_type == 61267) return true;
@@ -139,14 +154,15 @@ bool checkFileSystem(const std::string& path) {
     else return false;
 }
 
-AESCryptoData findInQuarantine(const std::string& prevPath, const std::vector<std::string>& quarantineDb){
-    AESCryptoData aes{};
+// Finds given filename in quarantine database
+QuarantineData FindInQuarantine(const std::string& prevPath, const std::vector<std::string>& quarantineDb){
+    QuarantineData qDB{};
     std::array<std::string,6> quarantineData{};
-    for (std::string line : quarantineDb){
+    for (std::string line : quarantineDb){                              // Iterates through quarantine database
         int start = 0;
         int delimiter = line.find_first_of(',');
         std::string temp = line.substr(start,delimiter);
-        if (temp == prevPath){
+        if (temp == prevPath){                                          // If previous filename in database equals given filename generates QuarantineData
             quarantineData[0]=temp;
             for (int i = 1; i<6; i++){
                 line = line.erase(start,delimiter+1);
@@ -156,24 +172,34 @@ AESCryptoData findInQuarantine(const std::string& prevPath, const std::vector<st
             break;
         }
     }
-    if(quarantineData[0].empty()) return aes;
-    aes.prevName=quarantineData[0];
-    aes.inQuarantineName=quarantineData[1];
-    aes.keyString=quarantineData[2];
-    aes.ivString=quarantineData[3];
-    aes.perms= static_cast<std::filesystem::perms>(std::stoi(quarantineData[4]));
-    aes.date = quarantineData[5];
-    return aes;
+    if(quarantineData[0].empty()) return qDB;
+    qDB.prevName=quarantineData[0];
+    qDB.inQuarantineName=quarantineData[1];
+    qDB.keyString=quarantineData[2];
+    qDB.ivString=quarantineData[3];
+    qDB.perms= static_cast<std::filesystem::perms>(std::stoi(quarantineData[4]));
+    qDB.date = quarantineData[5];
+    return qDB;
 }
 
-bool restoreFromQuarantine(const std::string& path,std::vector<std::string>& quarantineDb){
-    AESCryptoData aes = findInQuarantine(path,quarantineDb);
-    if(aes.prevName.empty()){
+// Restores given file from quarantine, returns if it was successful
+bool RestoreFromQuarantine(const std::string& path, std::vector<std::string>& quarantineDb){
+    QuarantineData qDB = FindInQuarantine(path, quarantineDb);
+    if(qDB.prevName.empty()){
         return false;
     }
-    decryptFile(aes);
+    try {
+        DecryptFile(qDB);
+    }catch (CryptoPP::FileStore::OpenErr const & ex){
+        std::cerr << "Failed decrypting file, "<<ex.GetWhat()<<"\n";
+        return false;
+    }
+    catch (CryptoPP::FileStore::ReadErr const & ex){
+        std::cerr << "Failed decrypting file, "<<ex.GetWhat()<<"\n";
+        return false;
+    }
     try{
-        std::filesystem::remove(aes.inQuarantineName);
+        std::filesystem::remove(qDB.inQuarantineName);
     }catch(std::filesystem::filesystem_error const& ex){
         return false;
     }
@@ -182,24 +208,24 @@ bool restoreFromQuarantine(const std::string& path,std::vector<std::string>& qua
     for (const std::string& line : quarantineDb){
         int delimiter = line.find_first_of(',');
         std::string temp = line.substr(0,delimiter);
-        if (temp == aes.prevName){
+        if (temp == qDB.prevName){
             toRemove=line;
             break;
         }
     }
-    if(!toRemove.empty()){
+    if(!toRemove.empty()){                                  // If found given filename in database, removes it to avoid further conflicts
         auto position = std::find(quarantineDb.begin(), quarantineDb.end(), toRemove);
         quarantineDb.erase(position);
-        std::filesystem::remove(aes.inQuarantineName);
-        saveToQuarantineDatabase(quarantineDb);
+        std::filesystem::remove(qDB.inQuarantineName);
+        SaveToQuarantineDatabase(quarantineDb);
         return true;
     }
     else
         return false;
 }
 
-
-std::string prepareQuarantineLine(std::string& line){
+// Output prepared for user
+std::string PrepareQuarantineLine(std::string& line){
     std::array<std::string,6> quarantineData{};
     int start = 0;
     int delimiter;
@@ -213,9 +239,9 @@ std::string prepareQuarantineLine(std::string& line){
     return ss.str();
 }
 
-void printQuarantineDatabase(const std::vector<std::string>& database){
+void PrintQuarantineDatabase(const std::vector<std::string>& database){
     for (std::string line : database){
-        std::cout << prepareQuarantineLine(line) << "\n";
+        std::cout << PrepareQuarantineLine(line) << "\n";
     }
 }
 
