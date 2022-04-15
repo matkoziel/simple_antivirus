@@ -123,7 +123,7 @@ QuarantineData QuarantineAFile(const std::string& path, std::vector<std::string>
     tm* currTm;
     currTm = localtime(&now);                                           // Gets current date and time
     char *date = new char[50];
-    strftime(date, 50, "%D %T", currTm);                 // Date formatting
+    strftime(date, 50, "%D %T", currTm);                                // Date formatting
     std::string dateStr = date;
     qDB.date = dateStr;
     delete[](date);

@@ -37,7 +37,7 @@ void AppendToQuarantineDatabase(const std::string& input, std::vector<std::strin
 
 QuarantineData FindInQuarantine(const std::string& prevPath, const std::vector<std::string>& quarantineDb);
 
-void AddToQuarantineDatabase(const QuarantineData& aes, std::vector<std::string>& database);
+void AddToQuarantineDatabase(const QuarantineData& qDB, std::vector<std::string>& database);
 
 
 #endif //SIMPLE_ANTIVIRUS_DATA_FUNCTIONS_H

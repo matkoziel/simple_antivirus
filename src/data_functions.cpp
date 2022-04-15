@@ -24,9 +24,9 @@ void AppendToQuarantineDatabase(const std::string& input, std::vector<std::strin
 }
 
 // Changes QuarantineData to csv line and appends csv line to vrctor
-void AddToQuarantineDatabase(const QuarantineData& aes, std::vector<std::string>& database) {
+void AddToQuarantineDatabase(const QuarantineData& qDB, std::vector<std::string>& database) {
     std::stringstream ss;
-    ss<< aes.prevName << "," << aes.inQuarantineName << "," << aes.keyString << "," <<aes.ivString<<","<< static_cast<int>(aes.perms)<<","<<aes.date;
+    ss << qDB.prevName << "," << qDB.inQuarantineName << "," << qDB.keyString << "," << qDB.ivString << "," << static_cast<int>(qDB.perms) << "," << qDB.date;
     AppendToQuarantineDatabase(ss.str(), database);
 }
 
