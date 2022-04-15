@@ -69,12 +69,19 @@ int main(int argc, char **argv) {
         if(*scanOpt){
             if(!*d) {
                 hashDatabaseStr="data/example_database.csv";
+                bool hashDatabaseAvailable{};
                 try{
-                    std::filesystem::exists(hashDatabaseStr);
+                    hashDatabaseAvailable=std::filesystem::exists(hashDatabaseStr);
                 }catch(std::filesystem::filesystem_error const& ex) {
                     std::string message=std::filesystem::current_path().append("/").append(hashDatabaseStr);
                     std::cerr << "Cannot open default database in: " << message << "\n";
                     std::cerr << "Try to specify database running program with --d parameter\n";
+                    return EXIT_FAILURE;
+                }
+                if(!hashDatabaseAvailable){
+                    std::string message=std::filesystem::current_path().append("/").append(hashDatabaseStr);
+                    std::cerr << "Cannot open default database in: " << message << "\n";
+                    std::cerr << "Try to specify database by running program with --d parameter\n";
                     return EXIT_FAILURE;
                 }
             }
