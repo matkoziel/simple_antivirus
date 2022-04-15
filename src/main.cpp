@@ -69,11 +69,19 @@ int main(int argc, char **argv) {
         if(*scanOpt){
             if(!*d) {
                 hashDatabaseStr="data/example_database.csv";
+                try{
+                    std::filesystem::exists(hashDatabaseStr);
+                }catch(std::filesystem::filesystem_error const& ex) {
+                    std::string message=std::filesystem::current_path().append("/").append(hashDatabaseStr);
+                    std::cerr << "Cannot open default database in: " << message << "\n";
+                    std::cerr << "Try to specify database running program with --d parameter\n";
+                    return EXIT_FAILURE;
+                }
             }
             std::unordered_set<std::string> hashDatabase{};
             bool quarantineDirExist{};
             bool quarantineDatabaseExist{};
-            MakeQuarantineDatabaseAvailable();                          // Opening database
+            MakeQuarantineDatabaseAvailable();                                                  // Opening database
             try{
                 quarantineDirExist = std::filesystem::exists(quarantineDir);
                 quarantineDatabaseExist =std::filesystem::exists(quarantineDatabase);
