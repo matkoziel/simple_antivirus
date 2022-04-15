@@ -68,7 +68,7 @@ int main(int argc, char **argv) {
         }
         if(*scanOpt){
             if(!*d) {
-                hashDatabaseStr="../data/example_database.csv";
+                hashDatabaseStr="data/example_database.csv";
             }
             std::unordered_set<std::string> hashDatabase{};
             bool quarantineDirExist{};
