@@ -1,15 +1,11 @@
-cmake_minimum_required(VERSION 3.21)
+cmake_minimum_required(VERSION 3.16)
 project(simple_antivirus)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
+add_executable(simple_antivirus src/file_functions.cpp headers/file_functions.h src/crypto_functions.cpp headers/crypto_functions.h src/main.cpp headers/main.h src/scan.cpp headers/scan.h src/data_functions.cpp headers/data_functions.h)
 
-link_libraries(crypto)
-#add_library(crypto++ STATIC IMPORTED)
-link_libraries(crypto++)
-#target_link_libraries(crypto++ STATIC)
-#find_package(crypto++ REQUIRED)
-#target_link_libraries(${simple_antivirus} crypto++)
+target_link_libraries(simple_antivirus ${CMAKE_SOURCE_DIR}/libs/libcrypto++.a)
 
-add_executable(simple_antivirus src/file_management.cpp headers/file_management.h src/crypto_functions.cpp headers/crypto_functions.h src/main.cpp headers/main.h)
+

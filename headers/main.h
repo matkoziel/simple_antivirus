@@ -1,13 +1,16 @@
 //
 // Created by kozzi on 4/5/22.
 //
-#include <string>
 
-#ifndef ANTYWIRUS_MATEUSZ_KOZIEL_MAIN_H
-#define ANTYWIRUS_MATEUSZ_KOZIEL_MAIN_H
+#ifndef SIMPLE_ANTIVIRUS_MAIN_H
+#define SIMPLE_ANTIVIRUS_MAIN_H
+
+#include <string>
+#include <vector>
 
 
 extern std::string quarantineDir;
 extern std::string quarantineDatabase;
+extern std::vector<std::string> quarantineDatabaseDB;
 
-#endif //ANTYWIRUS_MATEUSZ_KOZIEL_MAIN_H
+#endif //SIMPLE_ANTIVIRUS_MAIN_H
