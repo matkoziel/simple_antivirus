@@ -7,10 +7,12 @@
 
 #include <string>
 #include <vector>
+#include <unordered_set>
 
 
 extern std::string quarantineDir;
 extern std::string quarantineDatabase;
 extern std::vector<std::string> quarantineDatabaseDB;
+extern std::unordered_set<std::string> hashDatabaseDB;
 
 #endif //SIMPLE_ANTIVIRUS_MAIN_H

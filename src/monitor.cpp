@@ -13,6 +13,9 @@
 #include <unordered_map>
 #include <vector>
 
+#include "../headers/file_functions.h"
+#include "../headers/scan.h"
+
 #define EVENT_SIZE (sizeof(struct inotify_event))
 #define BUF_LEN (1024 * (EVENT_SIZE + 16))
 
@@ -62,6 +65,9 @@ void checkForChanges(std::vector<std::string> &paths, int fileDescriptor, std::u
                 if (event-> mask & IN_CREATE){
                     std::string fullPath = generateFullPath(event,wds);
                     std::cout <<"Created new file: " <<fullPath <<"\n";
+                    auto th = std::thread(AnalyzingFileWithoutFeedback,fullPath);
+                    th.join();
+//                    threads.push_back();
                 }
                 else if (event-> mask & IN_MODIFY){
                     std::string fullPath = generateFullPath(event,wds);
@@ -79,10 +85,16 @@ void checkForChanges(std::vector<std::string> &paths, int fileDescriptor, std::u
 
 void monitorCatalogueTree(const std::string& path) {
     std::vector<std::string> paths{};
+    bool checkDirectory{};
     for (std::filesystem::path dir_entry :
             std::filesystem::recursive_directory_iterator(path,std::filesystem::directory_options::skip_permission_denied))
     {
-        if(std::filesystem::is_directory(dir_entry)){
+        try{
+            checkDirectory=CheckFileSystem(path)&&!std::filesystem::is_empty(path)&&std::filesystem::is_directory(dir_entry);
+        } catch(const std::filesystem::filesystem_error& ex){
+            checkDirectory=false;
+        }
+        if(checkDirectory){
             paths.push_back(dir_entry);
         }
     }

@@ -6,6 +6,11 @@
 #define SIMPLE_ANTIVIRUS_MONITOR_H
 
 #include <string>
+#include <thread>
+#include <vector>
+
+
+extern std::vector<std::thread> threads;
 
 void monitorCatalogueTree(const std::string& path);
 

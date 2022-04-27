@@ -12,9 +12,10 @@
 #include <cryptopp/files.h>
 
 #include "../headers/file_functions.h"
+#include "../headers/main.h"
 
-// Analyze given hash of given path with hashes database and gives feedback
-void AnalyzingFile(const std::string& pathString, std::unordered_set<std::string>& hashes, std::vector<std::string>& quarantineDB, std::vector<std::string>& quarantinedList) {
+// Analyze given hash of given path with hashDatabaseDB database and gives feedback
+void AnalyzingFile(const std::string& pathString, std::vector<std::string>& quarantinedList) {
     std::string hash{};
     std::cout << "Analyzing: " << pathString;
     try {
@@ -27,10 +28,35 @@ void AnalyzingFile(const std::string& pathString, std::unordered_set<std::string
         std::cerr << "Failed hashing file, "<<ex.GetWhat()<<"\n";
     }
     std::cout << ", hash : " << hash << "\n";
-    if (CheckFile(hash, hashes)) {
+    if (CheckFile(hash, hashDatabaseDB)) {
         std::cout << "Found potentially malicious file: " << pathString << "\n";
         quarantinedList.push_back(pathString);
-        QuarantineAFile(pathString, quarantineDB);                            // Quarantines a file
+        QuarantineAFile(pathString, quarantineDatabaseDB);                            // Quarantines a file
+        try {
+            std::filesystem::remove(pathString);                                    // Removes malicious file that was quarantined before
+        }
+        catch (std::filesystem::filesystem_error const &ex) {
+            std::cerr << ex.code().message() << ": " << pathString << "\n";
+        }
+    }
+}
+// Analyze given hash of given path with hashDatabaseDB database and gives feedback
+void AnalyzingFileWithoutFeedback(const std::string& pathString) {
+    std::string hash{};
+    std::cout << "Analyzing: " << pathString;
+    try {
+        hash = MD5FileCryptoPP(pathString);
+    }
+    catch (CryptoPP::FileStore::OpenErr const & ex){
+        std::cerr << "Failed hashing file, "<<ex.GetWhat()<<"\n";
+    }
+    catch (CryptoPP::FileStore::ReadErr const & ex){
+        std::cerr << "Failed hashing file, "<<ex.GetWhat()<<"\n";
+    }
+    std::cout << ", hash : " << hash << "\n";
+    if (CheckFile(hash, hashDatabaseDB)) {
+        std::cout << "Found potentially malicious file: " << pathString << "\n";
+        QuarantineAFile(pathString, quarantineDatabaseDB);                            // Quarantines a file
         try {
             std::filesystem::remove(pathString);                                    // Removes malicious file that was quarantined before
         }
@@ -41,7 +67,7 @@ void AnalyzingFile(const std::string& pathString, std::unordered_set<std::string
 }
 
 // Scanning directory tree
-void ScanAllFilesInDirectory(const std::string& path, std::unordered_set<std::string>& hashes, std::vector<std::string>& quarantineDB) {
+void ScanAllFilesInDirectory(const std::string& path) {
     int nonRegularFiles=0;
     int symlinks=0;
     long long regularFiles=0;
@@ -77,7 +103,7 @@ void ScanAllFilesInDirectory(const std::string& path, std::unordered_set<std::st
                         if(boolPermissionDenied) {
                             if (std::filesystem::status(pathString).type() == std::filesystem::file_type::regular) {    // Checks if resolved symlink is regular
                                 if (!std::filesystem::is_empty(pathString)) {                                           // Checks if resolved symlink is empty
-                                    AnalyzingFile(pathString, hashes, quarantineDB,quarantined);
+                                    AnalyzingFile(pathString, quarantined);
                                     symlinks++;
                                 }
                             } else {
@@ -90,7 +116,7 @@ void ScanAllFilesInDirectory(const std::string& path, std::unordered_set<std::st
                     } else {
                         std::string pathString{directoryIteratorPath.u8string()};
                         if (!std::filesystem::is_empty(pathString)) {                           // Checks if file is not empty
-                            AnalyzingFile(pathString, hashes, quarantineDB,quarantined);
+                            AnalyzingFile(pathString, quarantined);
                             regularFiles++;
                         }
                     }
@@ -121,7 +147,7 @@ void ScanAllFilesInDirectory(const std::string& path, std::unordered_set<std::st
 }
 
 // Checks if given path is directory or file, then analyzes.
-void Scan(const std::string& path, std::unordered_set<std::string>& hashes, std::vector<std::string>& quarantineDB){
+void Scan(const std::string& path){
     std::cout << "Work in progress...\n";
     std::vector<std::string> quarantined{};
     bool isDirectory;
@@ -133,7 +159,7 @@ void Scan(const std::string& path, std::unordered_set<std::string>& hashes, std:
         return;
     }
     if(isDirectory){
-        ScanAllFilesInDirectory(path, hashes, quarantineDB);
+        ScanAllFilesInDirectory(path);
     }
     else {
         const std::filesystem::path &directoryIteratorPath(path);
@@ -152,7 +178,7 @@ void Scan(const std::string& path, std::unordered_set<std::string>& hashes, std:
                     }
                     if (std::filesystem::status(pathString).type() == std::filesystem::file_type::regular) {
                         if (!std::filesystem::is_empty(pathString)) {
-                            AnalyzingFile(pathString, hashes, quarantineDB,quarantined);
+                            AnalyzingFileWithoutFeedback(pathString);
                         }
                     } else {
                         std::cout << "Resolved symlink "<<pathString<<"is not regular file\n";
@@ -161,7 +187,7 @@ void Scan(const std::string& path, std::unordered_set<std::string>& hashes, std:
                 } else {
                     std::string pathString{directoryIteratorPath.u8string()};
                     if (!std::filesystem::is_empty(pathString)) {
-                        AnalyzingFile(pathString, hashes, quarantineDB,quarantined);
+                        AnalyzingFileWithoutFeedback(pathString);
                     }
                 }
             } else {

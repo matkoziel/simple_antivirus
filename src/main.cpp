@@ -4,18 +4,24 @@
 
 #include "../headers/main.h"
 
+#include <unistd.h>
+
 #include <csignal>
+#include <filesystem>
 #include <iostream>
 
 #include "../libs/CLI11.hpp"
 
 #include "../headers/crypto_functions.h"
 #include "../headers/file_functions.h"
+#include "../headers/monitor.h"
 #include "../headers/scan.h"
 
 std::string quarantineDir;
 std::string quarantineDatabase;
 std::vector<std::string> quarantineDatabaseDB;
+std::unordered_set<std::string> hashDatabaseDB;
+
 
 // Safe program termination
 void TerminateProgram(int inputSignal){
@@ -35,13 +41,28 @@ void TerminateProgram(int inputSignal){
         signal(SIGINT, TerminateProgram);
     }
 }
+int main(){
+    MakeQuarantineDatabaseAvailable();
+    quarantineDatabaseDB={};
+    quarantineDir= getenv("HOME");
+    quarantineDir=quarantineDir.append("/.quarantine");
+    quarantineDatabase=quarantineDir +"/.quarantine_database.csv";
+    std::string hashDatabaseStr="../data/example_database.csv";
+    hashDatabaseDB = ReadDatabaseToUnorderedSet(hashDatabaseStr);
+    quarantineDatabaseDB = ReadQuarantineDatabase(quarantineDatabase);
+    std::cout << getpid() << "\n";
+    std::string path = "/home";
+    monitorCatalogueTree(path);
+    MakeQuarantineDatabaseUnavailable();
+}
 
-int main(int argc, char **argv) {
+int main_(int argc, char **argv) {
     
     quarantineDir= getenv("HOME");
     quarantineDir=quarantineDir.append("/.quarantine");
     quarantineDatabase=quarantineDir +"/.quarantine_database.csv";
     quarantineDatabaseDB={};
+
     try{
         signal(SIGINT, TerminateProgram);
         CLI::App app{"Simple antivirus"};
@@ -85,7 +106,7 @@ int main(int argc, char **argv) {
                     return EXIT_FAILURE;
                 }
             }
-            std::unordered_set<std::string> hashDatabase{};
+//            std::unordered_set<std::string> hashDatabase{};
             bool quarantineDirExist{};
             bool quarantineDatabaseExist{};
             MakeQuarantineDatabaseAvailable();                                                  // Opening database
@@ -107,7 +128,7 @@ int main(int argc, char **argv) {
                     }
                 }
                 try {
-                    hashDatabase = ReadDatabaseToUnorderedSet(hashDatabaseStr);
+                    hashDatabaseDB = ReadDatabaseToUnorderedSet(hashDatabaseStr);
                     quarantineDatabaseDB = ReadQuarantineDatabase(quarantineDatabase);
                 }catch(std::filesystem::filesystem_error const& ex) {
                     std::cerr << "Cannot load databases from: "<< hashDatabaseStr<< " and: "<< quarantineDatabase <<" please check permissions\n";
@@ -119,7 +140,7 @@ int main(int argc, char **argv) {
                     std::string pathString = std::filesystem::canonical(
                             scanPath.parent_path().append(
                                     scanPath.filename().u8string()));   // Creates fullpath name of file
-                    Scan(pathString, hashDatabase, quarantineDatabaseDB);
+                    Scan(pathString);
                 }
                 catch(std::filesystem::filesystem_error const& ex) {
                     std::cerr << "Cannot create canonical path of: "<< scanFileName<< "\n";
@@ -154,7 +175,7 @@ int main(int argc, char **argv) {
                     }
                     std::cout << "Successfully created quarantine directory in :" << quarantineDir << "\n";
                     try {
-                        hashDatabase = ReadDatabaseToUnorderedSet(hashDatabaseStr);
+                        hashDatabaseDB = ReadDatabaseToUnorderedSet(hashDatabaseStr);
                         quarantineDatabaseDB = ReadQuarantineDatabase(quarantineDatabase);
                     }catch(std::filesystem::filesystem_error const& ex) {
                         std::cerr << "Cannot load databases from: "<< hashDatabaseStr<< " and: "<< quarantineDatabase <<" please check permissions\n";
@@ -166,7 +187,7 @@ int main(int argc, char **argv) {
                         std::string pathString = std::filesystem::canonical(
                                 scanPath.parent_path().append(
                                         scanPath.filename().u8string()));
-                        Scan(pathString, hashDatabase, quarantineDatabaseDB);
+                        Scan(pathString);
                     }
                     catch(std::filesystem::filesystem_error const& ex) {
                         std::cerr << "Cannot create canonical path of: "<< scanFileName<< "\n";
