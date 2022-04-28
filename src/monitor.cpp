@@ -7,6 +7,8 @@
 #include <sys/inotify.h>
 #include <unistd.h>
 
+#include "../libs/safe_queue.h"
+
 #include <filesystem>
 #include <iostream>
 #include <string>
@@ -19,12 +21,19 @@
 #define EVENT_SIZE (sizeof(struct inotify_event))
 #define BUF_LEN (1024 * (EVENT_SIZE + 16))
 
+SafeQueue<std::string> pathsToAnalyze;
+std::vector<std::thread*> threads;
+
 std::string generateFullPath(struct inotify_event* event, std::unordered_map<int,std::string>& wds) {
     auto dir = wds.find (event->wd);
     std::string fullPath = dir->second;
     fullPath.append("/");
     fullPath.append(event->name);
     return fullPath;
+}
+
+void executeThread(){
+
 }
 
 void checkForChanges(std::vector<std::string> &paths, int fileDescriptor, std::unordered_map<int,std::string>& wds) {
@@ -65,12 +74,14 @@ void checkForChanges(std::vector<std::string> &paths, int fileDescriptor, std::u
                 if (event-> mask & IN_CREATE){
                     std::string fullPath = generateFullPath(event,wds);
                     std::cout <<"Created new file: " <<fullPath <<"\n";
-                    auto th = std::thread(AnalyzingFileWithoutFeedback,fullPath);
-                    th.join();
+//                    auto th = std::thread(AnalyzingFileWithoutFeedback,fullPath);
+//                    th.join();
+                    pathsToAnalyze.enqueue(fullPath);
 //                    threads.push_back();
                 }
                 else if (event-> mask & IN_MODIFY){
                     std::string fullPath = generateFullPath(event,wds);
+                    pathsToAnalyze.enqueue(fullPath);
                     std::cout <<"Modified file: " << fullPath <<"\n";
                 }
                 else if (event-> mask & IN_DELETE){
@@ -85,6 +96,7 @@ void checkForChanges(std::vector<std::string> &paths, int fileDescriptor, std::u
 
 void monitorCatalogueTree(const std::string& path) {
     std::vector<std::string> paths{};
+    paths.push_back(path);
     bool checkDirectory{};
     for (std::filesystem::path dir_entry :
             std::filesystem::recursive_directory_iterator(path,std::filesystem::directory_options::skip_permission_denied))

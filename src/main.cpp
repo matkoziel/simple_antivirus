@@ -11,7 +11,7 @@
 #include <iostream>
 
 #include "../libs/CLI11.hpp"
-
+#include "../libs/safe_queue.h"
 #include "../headers/crypto_functions.h"
 #include "../headers/file_functions.h"
 #include "../headers/monitor.h"
@@ -21,7 +21,6 @@ std::string quarantineDir;
 std::string quarantineDatabase;
 std::vector<std::string> quarantineDatabaseDB;
 std::unordered_set<std::string> hashDatabaseDB;
-
 
 // Safe program termination
 void TerminateProgram(int inputSignal){
@@ -41,6 +40,25 @@ void TerminateProgram(int inputSignal){
         signal(SIGINT, TerminateProgram);
     }
 }
+
+void threadsWatcher(){
+    while(true){
+        threads.push_back(new std::thread(AnalyzingFileWithoutFeedback,pathsToAnalyze.dequeue()));
+        std::vector<std::vector<std::thread *>::iterator> toRemove{};
+        std::cout<< threads.size() << "\n";
+        for(auto thread: threads){
+            if(thread->joinable()){
+                auto index = std::find(threads.begin(), threads.end(), thread);
+                toRemove.push_back(index);
+                thread->join();
+            }
+        }
+        for(auto index: toRemove){
+            threads.erase(index);
+        }
+    }
+}
+
 int main(){
     MakeQuarantineDatabaseAvailable();
     quarantineDatabaseDB={};
@@ -51,7 +69,9 @@ int main(){
     hashDatabaseDB = ReadDatabaseToUnorderedSet(hashDatabaseStr);
     quarantineDatabaseDB = ReadQuarantineDatabase(quarantineDatabase);
     std::cout << getpid() << "\n";
+//    std::string path = "/home/kozzi/CLionProjects/BSO/headers";
     std::string path = "/home";
+    auto th = std::thread(threadsWatcher);
     monitorCatalogueTree(path);
     MakeQuarantineDatabaseUnavailable();
 }
