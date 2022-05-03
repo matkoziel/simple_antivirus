@@ -7,13 +7,15 @@
 
 #include "../libs/safe_queue.h"
 
+#include <future>
 #include <string>
 #include <thread>
 #include <queue>
 
 
+
 extern SafeQueue<std::string> pathsToAnalyze;
-extern std::vector<std::thread*> threads;
+extern std::vector<std::future<void>*> threads;
 
 void monitorCatalogueTree(const std::string& path);
 

@@ -6,6 +6,7 @@
 
 #include <unistd.h>
 
+#include <future>
 #include <csignal>
 #include <filesystem>
 #include <iostream>
@@ -40,21 +41,21 @@ void TerminateProgram(int inputSignal){
         signal(SIGINT, TerminateProgram);
     }
 }
+bool future_is_ready(std::future<void>* t){
+    return t->wait_for(std::chrono::seconds(0)) == std::future_status::ready;
+}
 
 void threadsWatcher(){
     while(true){
-        threads.push_back(new std::thread(AnalyzingFileWithoutFeedback,pathsToAnalyze.dequeue()));
-        std::vector<std::vector<std::thread *>::iterator> toRemove{};
-        std::cout<< threads.size() << "\n";
-        for(auto thread: threads){
-            if(thread->joinable()){
-                auto index = std::find(threads.begin(), threads.end(), thread);
-                toRemove.push_back(index);
-                thread->join();
-            }
+        if(threads.size()<=5){
+            threads.push_back(new std::future<void>{std::async(std::launch::async, AnalyzingFileWithoutFeedback,pathsToAnalyze.dequeue())});
         }
-        for(auto index: toRemove){
-            threads.erase(index);
+        std::cout<< threads.size() << "\n";
+        for(int it=0; it<threads.size();it++){
+            if(future_is_ready(threads[it])){
+                threads.erase(threads.begin()+it);
+                it--;
+            }
         }
     }
 }
