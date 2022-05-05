@@ -17,6 +17,7 @@
 #include "../headers/file_functions.h"
 #include "../headers/monitor.h"
 #include "../headers/scan.h"
+#include "../headers/virustotal_api.h"
 
 std::string quarantineDir;
 std::string quarantineDatabase;
@@ -48,18 +49,27 @@ bool future_is_ready(std::future<void>* t){
 void threadsWatcher(){
     while(true){
         if(threads.size()<=5){
-            threads.push_back(new std::future<void>{std::async(std::launch::async, AnalyzingFileWithoutFeedback,pathsToAnalyze.dequeue())});
+            std::string path = pathsToAnalyze.dequeue();
+            if(threads.find(path)==threads.end()){
+                threads.insert(std::pair<std::string, std::future<void>*>{path,new std::future<void>{std::async(std::launch::async, AnalyzingFileWithoutFeedback,path)}});
+            }
+            else {
+                pathsToAnalyze.enqueue(path);
+            }
         }
         std::cout<< threads.size() << "\n";
-        for(int it=0; it<threads.size();it++){
-            if(future_is_ready(threads[it])){
-                threads.erase(threads.begin()+it);
+        for (auto it = threads.begin(); it != threads.end(); it++){
+            if(future_is_ready(it->second)){
+                threads.erase(it);
                 it--;
             }
         }
     }
 }
-
+//int main(){
+//    getRequest();
+//return 0;
+//}
 int main(){
     MakeQuarantineDatabaseAvailable();
     quarantineDatabaseDB={};
@@ -70,8 +80,8 @@ int main(){
     hashDatabaseDB = ReadDatabaseToUnorderedSet(hashDatabaseStr);
     quarantineDatabaseDB = ReadQuarantineDatabase(quarantineDatabase);
     std::cout << getpid() << "\n";
-//    std::string path = "/home/kozzi/CLionProjects/BSO/headers";
-    std::string path = "/home";
+    std::string path = "/home/kozzi/CLionProjects/BSO/data";
+//    std::string path = "/home";
     auto th = std::thread(threadsWatcher);
     monitorCatalogueTree(path);
     MakeQuarantineDatabaseUnavailable();

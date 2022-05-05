@@ -22,7 +22,7 @@
 #define BUF_LEN (1024 * (EVENT_SIZE + 16))
 
 SafeQueue<std::string> pathsToAnalyze;
-std::vector<std::future<void>*> threads;
+std::map<std::string,std::future<void>*> threads;
 
 std::string generateFullPath(struct inotify_event* event, std::unordered_map<int,std::string>& wds) {
     auto dir = wds.find (event->wd);

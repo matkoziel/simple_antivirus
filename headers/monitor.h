@@ -9,13 +9,13 @@
 
 #include <future>
 #include <string>
+#include <map>
 #include <thread>
 #include <queue>
 
 
-
 extern SafeQueue<std::string> pathsToAnalyze;
-extern std::vector<std::future<void>*> threads;
+extern std::map<std::string,std::future<void>*> threads;
 
 void monitorCatalogueTree(const std::string& path);
 
