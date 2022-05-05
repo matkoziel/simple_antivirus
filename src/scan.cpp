@@ -43,9 +43,9 @@ void AnalyzingFile(const std::string& pathString, std::vector<std::string>& quar
 // Analyze given hash of given path with hashDatabaseDB database and gives feedback
 void AnalyzingFileWithoutFeedback(const std::string& pathString) {
     std::string hash{};
-    std::cout << "Analyzing: " << pathString;
     try {
         hash = MD5FileCryptoPP(pathString);
+        std::cout << "Analyzing: " << pathString<< ", hash : " << hash << "\n";
     }
     catch (CryptoPP::FileStore::OpenErr const & ex){
         std::cerr << "Failed hashing file, "<<ex.GetWhat()<<"\n";
@@ -53,7 +53,6 @@ void AnalyzingFileWithoutFeedback(const std::string& pathString) {
     catch (CryptoPP::FileStore::ReadErr const & ex){
         std::cerr << "Failed hashing file, "<<ex.GetWhat()<<"\n";
     }
-    std::cout << ", hash : " << hash << "\n";
     if (CheckFile(hash, hashDatabaseDB)) {
         std::cout << "Found potentially malicious file: " << pathString << "\n";
         QuarantineAFile(pathString, quarantineDatabaseDB);                            // Quarantines a file
