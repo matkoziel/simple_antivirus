@@ -17,7 +17,7 @@
 #include "../headers/file_functions.h"
 #include "../headers/monitor.h"
 #include "../headers/scan.h"
-//#include "../headers/virustotal_api.h"
+#include "../headers/virustotal_api.h"
 
 std::string quarantineDir;
 std::string quarantineDatabase;
@@ -67,11 +67,12 @@ bool future_is_ready(std::future<void>* t){
         }
     }
 }
-//int main(){
-//    getRequest();
-//return 0;
-//}
 int main(){
+//    getRequest();
+    createJson("abcd");
+    return 0;
+}
+int main__(){
     quarantineDatabaseDB={};
     quarantineDir= getenv("HOME");
     quarantineDir=quarantineDir.append("/.quarantine");
