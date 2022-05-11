@@ -4,35 +4,24 @@
 
 #include "../headers/virustotal_api.h"
 
-#include <cpprest/http_client.h>
-#include <cpprest/json.h>
+#include <curl/curl.h>
 
-web::json::value createJson(const std::string& fileContent){
-    web::json::value headers;
-    std::string apiKey = "4eb5b9181ba96807ad99fa242f6130bdf594d9d68ecb965f0a0e61f7f1efdb07";
-    headers["x-apikey"] = web::json::value::string(apiKey);
-    web::json::value files;
-    files["file\\"]=web::json::value::string(fileContent);
-    web::http::client::http_client client(U("https://www.virustotal.com/api/v3/files"));
-    web::http::http_request request(web::http::methods::POST);
-    request.headers().add("x-apikey","4eb5b9181ba96807ad99fa242f6130bdf594d9d68ecb965f0a0e61f7f1efdb07");
-    request.set_body(files);
-    web::http::http_response response = client.request(request).get();
-    std::cout << response.extract_string().get() << "\n";
-//    headers[""]
-    std::cout << headers.serialize() <<"\n";
+
+
+void cCurl(){
+    CURL *hnd = curl_easy_init();
+
+    curl_easy_setopt(hnd, CURLOPT_CUSTOMREQUEST, "POST");
+    curl_easy_setopt(hnd, CURLOPT_URL, "https://www.virustotal.com/vtapi/v2/file/scan");
+
+    struct curl_slist *headers = NULL;
+    headers = curl_slist_append(headers, "Accept: text/plain");
+    headers = curl_slist_append(headers, "Content-Type: application/x-www-form-urlencoded");
+    curl_easy_setopt(hnd, CURLOPT_HTTPHEADER, headers);
+
+    curl_easy_setopt(hnd, CURLOPT_POSTFIELDS, "file=data%base64%&apikey=4eb5b9181ba96807ad99fa242f6130bdf594d9d68ecb965f0a0e61f7f1efdb07");
+
+    CURLcode ret = curl_easy_perform(hnd);
+    std::cout << ret << "\n";
 }
 
-
-void getRequest(){
-    web::http::client::http_client client("http://httpbin.org/");
-
-    web::http::http_response response;
-    // ordinary `get` request
-    response = client.request(web::http::methods::GET, "/get").get();
-    std::cout << response.extract_string().get() << "\n";
-
-    // working with json
-    response = client.request(web::http::methods::GET, "/get").get();
-    std::cout << "url: " << response.extract_json().get()[U("url")] << "\n";
-}

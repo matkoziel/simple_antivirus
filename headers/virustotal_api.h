@@ -8,6 +8,7 @@
 #include <cpprest/http_client.h>
 
 void getRequest();
+void cCurl();
 
 web::json::value createJson(const std::string& fileContent);
 

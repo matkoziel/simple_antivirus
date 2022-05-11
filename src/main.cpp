@@ -69,7 +69,7 @@ bool future_is_ready(std::future<void>* t){
 }
 int main(){
 //    getRequest();
-    createJson("abcd");
+    Base64Encode("/home/kozzi/CLionProjects/BSO/simple_antivirus/data/MaliciousExec.exe");
     return 0;
 }
 int main__(){
