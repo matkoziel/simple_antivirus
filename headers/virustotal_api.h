@@ -7,9 +7,6 @@
 
 #include <cpprest/http_client.h>
 
-void getRequest();
-void cCurl();
-
-web::json::value createJson(const std::string& fileContent);
+void VirusTotalReport(const std::string& apiKey, const std::string& hash);
 
 #endif //SIMPLE_ANTIVIRUS_VIRUSTOTAL_API_H

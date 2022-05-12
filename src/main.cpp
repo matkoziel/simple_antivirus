@@ -68,8 +68,11 @@ bool future_is_ready(std::future<void>* t){
     }
 }
 int main(){
-//    getRequest();
-    Base64Encode("/home/kozzi/CLionProjects/BSO/simple_antivirus/data/MaliciousExec.exe");
+    std::string apiKey="4eb5b9181ba96807ad99fa242f6130bdf594d9d68ecb965f0a0e61f7f1efdb07";
+    std::string apiKey2="4eb5b9181ba96807ad99fa242f6130bdf594d9d68ecb965f0a0e61f7f1efdb17";
+    std::string hash="eda0a458619f2459bf6030aa1f2cd1c6";
+    std::string hash2="51245796123245a7f3d76013507f656e";
+    VirusTotalReport(apiKey,hash2);
     return 0;
 }
 int main__(){

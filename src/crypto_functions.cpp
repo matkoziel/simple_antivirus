@@ -22,26 +22,6 @@
 
 struct QuarantineData;
 
-std::string Base64Encode(const std::string& filePath){
-    std::ifstream file(filePath);
-    file.seekg( 0, std::ios::end );
-    size_t length = file.tellg();
-    char *inputChar = new char[length];
-    file.seekg(0, std::ios::beg);
-    file.read(inputChar, length);
-    file.close();
-    auto *input = (byte*) inputChar;
-    std::string encoded{};
-
-    CryptoPP::StringSource ss(input, sizeof(input), true,
-                              new CryptoPP::Base64Encoder(
-                            new CryptoPP::StringSink(encoded)
-                    ) // Base64Encoder
-    ); // StringSource
-
-    std::cout << encoded << std::endl;
-}
-
 // CryptoPP lib
 // Calculates md5 sum of given file
 std::string MD5FileCryptoPP(const std::string& path) {
