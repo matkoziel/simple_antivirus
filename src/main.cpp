@@ -72,7 +72,12 @@ int main(){
     std::string apiKey2="4eb5b9181ba96807ad99fa242f6130bdf594d9d68ecb965f0a0e61f7f1efdb17";
     std::string hash="eda0a458619f2459bf6030aa1f2cd1c6";
     std::string hash2="51245796123245a7f3d76013507f656e";
-    VirusTotalReport(apiKey,hash2);
+    std::string hash3="123";
+//    web::json::value data = VirusTotalReport(apiKey,hash3);
+//    std::cout << data << "\n";
+//    AnalyzeWithVTApi(apiKey,hash2);
+//    VirusTotalAnalyze("/home/kozzi/Downloads/7682b842ed75b69e23c5deecf05a45ee79c723d98cfb6746380d748145bfc1af",apiKey,false);
+    VirusTotalAnalyze("/home/kozzi/CLionProjects/BSO/simple_antivirus/data/example_database.csv",apiKey,false);
     return 0;
 }
 int main__(){
