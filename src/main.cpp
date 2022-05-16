@@ -358,7 +358,7 @@ int main(int argc, char **argv) {
                     return EXIT_FAILURE;
                 }
                 auto thWatcher = std::thread(ThreadsWatcher);
-                auto thMonitor = std::thread(monitorCatalogueTree,pathString);
+                auto thMonitor = std::thread(MonitorCatalogueTree, pathString);
                 char c;
                 bool check = true;
                 while(check){
@@ -371,7 +371,7 @@ int main(int argc, char **argv) {
                         check=false;
                     }
                 }
-                std::cout << "\n Safely terminating program\n";
+                std::cout << "\nSafely terminating program\n";
                 loop=false;
                 pathsToAnalyze.enqueue(""); // To avoid stuck in SafeQueue
                 thWatcher.join();

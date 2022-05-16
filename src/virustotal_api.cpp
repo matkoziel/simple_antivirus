@@ -5,10 +5,11 @@
 #include "../headers/virustotal_api.h"
 
 #include <cpprest/http_client.h>
-#include <cpprest/uri.h>
 #include <cpprest/json.h>
 
 #include "../headers/crypto_functions.h"
+#include "../headers/main.h"
+#include "../headers/file_functions.h"
 
 web::json::value VirusTotalReport(const std::string& apiKey, const std::string& hash){
     std::string requestUri = "https://www.virustotal.com/vtapi/v2/file/report?apikey=";
@@ -32,7 +33,7 @@ void GenerateOutput(const web::json::value& scans){
         }
     }
 }
-void AnalyzeWithVTApi(const std::string& apiKey, const std::string& hash){
+void AnalyzeWithVTApi(const std::string& apiKey, const std::string& hash,const std::string& path){
     std::cout << "Sending request to VirusTotal API...\n";
     web::json::value data = VirusTotalReport(apiKey,hash);
     if(data.is_null()){
@@ -42,6 +43,7 @@ void AnalyzeWithVTApi(const std::string& apiKey, const std::string& hash){
     if(data[U("response_code")].as_integer()==1){
         if(data[U("positives")].as_integer()!=0){
             auto scans = data[U("scans")];
+            QuarantineAFile(path, quarantineDatabaseDB);
             GenerateOutput(scans);
         }
         else{
@@ -85,7 +87,7 @@ void VirusTotalAnalyze(const std::string& path,const std::string& apiKey, bool q
         AnalyzeWithVTApiQuiet(apiKey,hash);
     }
     else{
-        AnalyzeWithVTApi(apiKey,hash);
+        AnalyzeWithVTApi(apiKey,hash,path);
     }
 }
 

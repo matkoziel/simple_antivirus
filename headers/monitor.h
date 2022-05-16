@@ -17,6 +17,6 @@
 extern SafeQueue<std::string> pathsToAnalyze;
 extern std::map<std::string,std::future<void>*> threads;
 
-void monitorCatalogueTree(const std::string& path);
+void MonitorCatalogueTree(const std::string& path);
 
 #endif //SIMPLE_ANTIVIRUS_MONITOR_H

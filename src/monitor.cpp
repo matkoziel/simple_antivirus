@@ -25,7 +25,7 @@
 SafeQueue<std::string> pathsToAnalyze;
 std::map<std::string,std::future<void>*> threads;
 
-std::string generateFullPath(struct inotify_event* event, std::unordered_map<int,std::string>& wds) {
+std::string GenerateFullPath(struct inotify_event* event, std::unordered_map<int,std::string>& wds) {
     auto dir = wds.find (event->wd);
     std::string fullPath = dir->second;
     fullPath.append("/");
@@ -52,19 +52,19 @@ int ReadWithTimeout(int fileDescriptor, char *buffer,size_t length){
     }
 }
 
-void checkForChanges(std::vector<std::string> &paths, int fileDescriptor, std::unordered_map<int,std::string>& wds,char buffer[],int length) {
+void CheckForChanges(std::vector<std::string> &paths, int fileDescriptor, std::unordered_map<int,std::string>& wds, char buffer[], int length) {
     int i{0};
     while(loop && (i<length)) { // Reads block until event occurs
         auto *event = (struct inotify_event*) &buffer[i];
         if (event->len){
             if(event -> mask & IN_ISDIR){
                 if (event-> mask & IN_CREATE){
-                    std::string fullPath = generateFullPath(event,wds);
+                    std::string fullPath = GenerateFullPath(event, wds);
                     paths.push_back(fullPath);
                     wds.insert(std::pair<int, std::string>(inotify_add_watch(fileDescriptor,fullPath.c_str(),IN_MODIFY | IN_CREATE | IN_DELETE),fullPath));
                 }
                 else if (event-> mask & IN_DELETE){
-                    std::string fullPath = generateFullPath(event,wds);
+                    std::string fullPath = GenerateFullPath(event, wds);
                     int found{0};
                     for (auto & wd : wds) {
                         if (wd.second == fullPath){
@@ -80,12 +80,12 @@ void checkForChanges(std::vector<std::string> &paths, int fileDescriptor, std::u
             }
             else{
                 if (event-> mask & IN_CREATE){
-                    std::string fullPath = generateFullPath(event,wds);
+                    std::string fullPath = GenerateFullPath(event, wds);
                     std::cout << "File created\n";
                     pathsToAnalyze.enqueue(fullPath);
                 }
                 else if (event-> mask & IN_MODIFY){
-                    std::string fullPath = generateFullPath(event,wds);
+                    std::string fullPath = GenerateFullPath(event, wds);
                     std::cout << "File created\n";
                     pathsToAnalyze.enqueue(fullPath);
                 }
@@ -95,7 +95,7 @@ void checkForChanges(std::vector<std::string> &paths, int fileDescriptor, std::u
     }
 }
 
-void monitorCatalogueTree(const std::string& path) {
+void MonitorCatalogueTree(const std::string& path) {
     std::vector<std::string> paths{};
     paths.push_back(path);
     bool checkDirectory{};
@@ -122,7 +122,7 @@ void monitorCatalogueTree(const std::string& path) {
         char buffer[BUF_LEN];
         int length = ReadWithTimeout(fileDescriptor, buffer,BUF_LEN);
         if(length!=-1){
-            checkForChanges(paths,fileDescriptor,wds,buffer,length);
+            CheckForChanges(paths, fileDescriptor, wds, buffer, length);
         }
     }
     for (const auto& wd : wds){
