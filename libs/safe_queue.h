@@ -1,6 +1,4 @@
-//
-// Created by kozzi on 28.04.22.
-//
+//Source: StackOverflow
 
 #ifndef SIMPLE_ANTIVIRUS_SAFE_QUEUE_H
 #define SIMPLE_ANTIVIRUS_SAFE_QUEUE_H

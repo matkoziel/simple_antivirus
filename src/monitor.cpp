@@ -16,6 +16,7 @@
 #include <vector>
 
 #include "../headers/file_functions.h"
+#include "../headers/main.h"
 #include "../headers/scan.h"
 
 #define EVENT_SIZE (sizeof(struct inotify_event))
@@ -94,6 +95,7 @@ void monitorCatalogueTree(const std::string& path) {
     std::vector<std::string> paths{};
     paths.push_back(path);
     bool checkDirectory{};
+    std::cout << "Loading all monitored files...\n";
     for (std::filesystem::path dir_entry :
             std::filesystem::recursive_directory_iterator(path,std::filesystem::directory_options::skip_permission_denied))
     {
@@ -111,13 +113,12 @@ void monitorCatalogueTree(const std::string& path) {
     for (const std::string& wdPath : paths) {
         wds.insert(std::pair<int, std::string>(inotify_add_watch(fileDescriptor,wdPath.c_str(),IN_MODIFY | IN_CREATE | IN_DELETE),wdPath));
     }
-
-    while(true) {
+    std::cout << "Successfully loaded all files\n";
+    while(loop) {
         checkForChanges(paths,fileDescriptor,wds);
     }
     for (const auto& wd : wds){
         inotify_rm_watch(fileDescriptor,wd.first);
     }
     close(fileDescriptor);
-
 }

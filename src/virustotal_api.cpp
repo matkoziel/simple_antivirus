@@ -7,7 +7,6 @@
 #include <cpprest/http_client.h>
 #include <cpprest/uri.h>
 #include <cpprest/json.h>
-#include <cryptopp/files.h>
 
 #include "../headers/crypto_functions.h"
 
@@ -59,19 +58,8 @@ void AnalyzeWithVTApi(const std::string& apiKey, const std::string& hash){
     }
 }
 void VirusTotalAnalyze(const std::string& path,const std::string& apiKey, bool quiet){
-    std::string hash{};
-    try {
-        hash = MD5FileCryptoPP(path);
-        std::cout << "Analyzing: " << path<< ", hash : " << hash << "\n";
-    }
-    catch (CryptoPP::FileStore::OpenErr const & ex){
-        std::cerr << "Failed hashing file, "<<ex.GetWhat()<<"\n";
-        return;
-    }
-    catch (CryptoPP::FileStore::ReadErr const & ex){
-        std::cerr << "Failed hashing file, "<<ex.GetWhat()<<"\n";
-        return;
-    }
+    std::string hash = MD5FileCryptoPP(path);
+    std::cout << "Analyzing: " << path<< ", hash : " << hash << "\n";
     if(quiet){
         //TODO: Add quiet method
     }

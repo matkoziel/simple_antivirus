@@ -4,8 +4,10 @@
 
 #include "../headers/main.h"
 
+#include <termios.h>
 #include <unistd.h>
 
+#include <iostream>
 #include <future>
 #include <csignal>
 #include <filesystem>
@@ -19,10 +21,12 @@
 #include "../headers/scan.h"
 #include "../headers/virustotal_api.h"
 
+
 std::string quarantineDir;
 std::string quarantineDatabase;
 std::vector<std::string> quarantineDatabaseDB;
 std::unordered_set<std::string> hashDatabaseDB;
+std::atomic<bool> loop;
 
 // Safe program termination
 void TerminateProgram(int inputSignal){
@@ -46,8 +50,9 @@ bool future_is_ready(std::future<void>* t){
     return t->wait_for(std::chrono::seconds(0)) == std::future_status::ready;
 }
 
-[[noreturn]] void threadsWatcher(){
-    while(true){
+void threadsWatcher(){
+    loop=true;
+    while(loop){
         if(threads.size()<=5){
             std::string path = pathsToAnalyze.dequeue();
             if(threads.find(path)==threads.end()){
@@ -60,6 +65,17 @@ bool future_is_ready(std::future<void>* t){
         for (auto it = threads.begin();it!=threads.end();){
             if(future_is_ready(it->second)){
                 threads.erase(it++);
+//                delete(it->second);
+            }
+            else{
+                ++it;
+            }
+        }
+    }
+    while(!threads.empty()){
+        for (auto it = threads.begin();it!=threads.end();){
+            if(future_is_ready(it->second)){
+                threads.erase(it++);
             }
             else{
                 ++it;
@@ -67,33 +83,60 @@ bool future_is_ready(std::future<void>* t){
         }
     }
 }
-int main(){
+int kbhit() {
+    static bool initflag = false;
+    static const int STDIN = 0;
+
+    if (!initflag) {
+        // Use termios to turn off line buffering
+        struct termios term{};
+        tcgetattr(STDIN, &term);
+        term.c_lflag &= ~ICANON;
+        tcsetattr(STDIN, TCSANOW, &term);
+        setbuf(stdin, NULL);
+        initflag = true;
+    }
+
+    int nbbytes;
+    ioctl(STDIN, FIONREAD, &nbbytes);  // 0 is STDIN
+    return nbbytes;
+}
+
+int main_VT(){
     std::string apiKey="4eb5b9181ba96807ad99fa242f6130bdf594d9d68ecb965f0a0e61f7f1efdb07";
     std::string apiKey2="4eb5b9181ba96807ad99fa242f6130bdf594d9d68ecb965f0a0e61f7f1efdb17";
     std::string hash="eda0a458619f2459bf6030aa1f2cd1c6";
-    std::string hash2="51245796123245a7f3d76013507f656e";
-    std::string hash3="123";
-//    web::json::value data = VirusTotalReport(apiKey,hash3);
-//    std::cout << data << "\n";
-//    AnalyzeWithVTApi(apiKey,hash2);
-//    VirusTotalAnalyze("/home/kozzi/Downloads/7682b842ed75b69e23c5deecf05a45ee79c723d98cfb6746380d748145bfc1af",apiKey,false);
-    VirusTotalAnalyze("/home/kozzi/CLionProjects/BSO/simple_antivirus/data/example_database.csv",apiKey,false);
+    std::string hash2="123";
+    VirusTotalAnalyze("/home/kozzi/CLionProjects/BSO/data/example_database.csv",apiKey,false);
     return 0;
 }
-int main__(){
-    quarantineDatabaseDB={};
-    quarantineDir= getenv("HOME");
-    quarantineDir=quarantineDir.append("/.quarantine");
-    quarantineDatabase=quarantineDir +"/.quarantine_database.csv";
-    std::string hashDatabaseStr="../data/example_database.csv";
+int main(){
+    quarantineDatabaseDB = {};
+    quarantineDir = getenv("HOME");
+    quarantineDir = quarantineDir.append("/.quarantine");
+    quarantineDatabase = quarantineDir + "/.quarantine_database.csv";
+    std::string hashDatabaseStr = "../data/example_database.csv";
     MakeQuarantineDatabaseAvailable();
     hashDatabaseDB = ReadDatabaseToUnorderedSet(hashDatabaseStr);
     quarantineDatabaseDB = ReadQuarantineDatabase(quarantineDatabase);
     std::cout << getpid() << "\n";
-    std::string path = "/home/kozzi";
-//    std::string path = "/home";
-    auto th = std::thread(threadsWatcher);
-    monitorCatalogueTree(path);
+    std::string path = "/home/kozzi/CLionProjects/BSO/headers";
+    //    std::string path = "/home";
+    auto thWatcher = std::thread(threadsWatcher);
+    auto thMonitor = std::thread(monitorCatalogueTree,path);
+    char c;
+    while (!kbhit()) {
+        fflush(stdout);
+        sleep(1);
+    }
+    c = getchar();
+    if (c==27){
+        std::cout<<"1231231231\n";
+    }
+    loop=false;
+    std::cout << "Out of loop\n";
+    thWatcher.join();
+    thMonitor.join();
     MakeQuarantineDatabaseUnavailable();
 }
 

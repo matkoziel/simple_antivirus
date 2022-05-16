@@ -113,7 +113,7 @@ void ScanAllFilesInDirectory(const std::string& path) {
                             permissionDenied++;
                         }
                     } else {
-                        std::string pathString{directoryIteratorPath.u8string()};
+                        std::string pathString=directoryIteratorPath.string();
                         if (!std::filesystem::is_empty(pathString)) {                           // Checks if file is not empty
                             AnalyzingFile(pathString, quarantined);
                             regularFiles++;
@@ -184,7 +184,7 @@ void Scan(const std::string& path){
                     }
 
                 } else {
-                    std::string pathString{directoryIteratorPath.u8string()};
+                    std::string pathString{directoryIteratorPath.string()};
                     if (!std::filesystem::is_empty(pathString)) {
                         AnalyzingFileWithoutFeedback(pathString);
                     }
