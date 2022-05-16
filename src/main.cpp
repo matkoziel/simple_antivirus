@@ -7,15 +7,14 @@
 #include <termios.h>
 #include <unistd.h>
 
-#include <iostream>
-#include <future>
 #include <csignal>
 #include <filesystem>
+#include <future>
 #include <iostream>
 
 #include "../libs/CLI11.hpp"
 #include "../libs/safe_queue.h"
-#include "../headers/crypto_functions.h"
+
 #include "../headers/file_functions.h"
 #include "../headers/monitor.h"
 #include "../headers/scan.h"
@@ -46,14 +45,14 @@ void TerminateProgram(int inputSignal){
         signal(SIGINT, TerminateProgram);
     }
 }
-bool future_is_ready(std::future<void>* t){
+bool FutureIsReady(std::future<void>* t){
     return t->wait_for(std::chrono::seconds(0)) == std::future_status::ready;
 }
 
-void threadsWatcher(){
+void ThreadsWatcher(){
     loop=true;
     while(loop){
-        if(threads.size()<=5){
+        if((threads.size()<=5)&&(loop||!threads.empty())){
             std::string path = pathsToAnalyze.dequeue();
             if(threads.find(path)==threads.end()){
                 threads.insert(std::pair<std::string, std::future<void>*>{path,new std::future<void>{std::async(std::launch::async, AnalyzingFileWithoutFeedback,path)}});
@@ -63,9 +62,9 @@ void threadsWatcher(){
             }
         }
         for (auto it = threads.begin();it!=threads.end();){
-            if(future_is_ready(it->second)){
+            if(FutureIsReady(it->second)){
+                delete(it->second);
                 threads.erase(it++);
-//                delete(it->second);
             }
             else{
                 ++it;
@@ -74,7 +73,8 @@ void threadsWatcher(){
     }
     while(!threads.empty()){
         for (auto it = threads.begin();it!=threads.end();){
-            if(future_is_ready(it->second)){
+            if(FutureIsReady(it->second)){
+                delete(it->second);
                 threads.erase(it++);
             }
             else{
@@ -83,12 +83,11 @@ void threadsWatcher(){
         }
     }
 }
-int kbhit() {
+int TerminateHandler() {
     static bool initflag = false;
     static const int STDIN = 0;
 
     if (!initflag) {
-        // Use termios to turn off line buffering
         struct termios term{};
         tcgetattr(STDIN, &term);
         term.c_lflag &= ~ICANON;
@@ -102,45 +101,7 @@ int kbhit() {
     return nbbytes;
 }
 
-int main_VT(){
-    std::string apiKey="4eb5b9181ba96807ad99fa242f6130bdf594d9d68ecb965f0a0e61f7f1efdb07";
-    std::string apiKey2="4eb5b9181ba96807ad99fa242f6130bdf594d9d68ecb965f0a0e61f7f1efdb17";
-    std::string hash="eda0a458619f2459bf6030aa1f2cd1c6";
-    std::string hash2="123";
-    VirusTotalAnalyze("/home/kozzi/CLionProjects/BSO/data/example_database.csv",apiKey,false);
-    return 0;
-}
-int main(){
-    quarantineDatabaseDB = {};
-    quarantineDir = getenv("HOME");
-    quarantineDir = quarantineDir.append("/.quarantine");
-    quarantineDatabase = quarantineDir + "/.quarantine_database.csv";
-    std::string hashDatabaseStr = "../data/example_database.csv";
-    MakeQuarantineDatabaseAvailable();
-    hashDatabaseDB = ReadDatabaseToUnorderedSet(hashDatabaseStr);
-    quarantineDatabaseDB = ReadQuarantineDatabase(quarantineDatabase);
-    std::cout << getpid() << "\n";
-    std::string path = "/home/kozzi/CLionProjects/BSO/headers";
-    //    std::string path = "/home";
-    auto thWatcher = std::thread(threadsWatcher);
-    auto thMonitor = std::thread(monitorCatalogueTree,path);
-    char c;
-    while (!kbhit()) {
-        fflush(stdout);
-        sleep(1);
-    }
-    c = getchar();
-    if (c==27){
-        std::cout<<"1231231231\n";
-    }
-    loop=false;
-    std::cout << "Out of loop\n";
-    thWatcher.join();
-    thMonitor.join();
-    MakeQuarantineDatabaseUnavailable();
-}
-
-int main_(int argc, char **argv) {
+int main(int argc, char **argv) {
     
     quarantineDir= getenv("HOME");
     quarantineDir=quarantineDir.append("/.quarantine");
@@ -154,6 +115,8 @@ int main_(int argc, char **argv) {
         auto scanOpt=app.add_subcommand("scan", "Scan given path");
         auto restoreOpt=app.add_subcommand("restore", "Restore file from quarantine");
         auto showOpt = app.add_subcommand("show", "Show quarantined files");
+        auto monitorOpt = app.add_subcommand("monitor", "Constant monitoring files in background");
+        auto VTOpt = app.add_subcommand("vt", "Scan given files using VirusTotal API");
 
         std::string scanFileName{};
         scanOpt -> add_option("--path",scanFileName,"Path to file/directory we want to Scan")
@@ -167,8 +130,23 @@ int main_(int argc, char **argv) {
         std::string restoreFileName{};
         restoreOpt -> add_option("--path",restoreFileName,"Path to file we want to restore");
 
+        std::string monitorFileName{};
+        monitorOpt -> add_option("--path",monitorFileName,"Path to file/directory we want to monitor")
+                ->required()
+                ->check(CLI::ExistingPath);
+
+        std::string vtFilename{};
+        VTOpt -> add_option("--path",vtFilename,"Path to file/directory we want to monitor")
+                ->required()
+                ->check(CLI::ExistingPath);
+        std::string apiKey{};
+        VTOpt -> add_option("--aK",apiKey,"Your VirusTotal API Key")
+                ->required();
+        bool quiet{false};
+        VTOpt -> add_option("--q",quiet,"Less output option");
+
         CLI11_PARSE(app, argc, argv)
-        if(!(*scanOpt || *restoreOpt || *showOpt)){
+        if(!(*scanOpt || *restoreOpt || *showOpt||*VTOpt||*monitorOpt)){
             std::cout << "Subcommand is obligatory, type --help for more information\n";
         }
         if(*scanOpt){
@@ -336,6 +314,95 @@ int main_(int argc, char **argv) {
             else {
                 std::cerr << "Quarantine database: " << quarantineDatabase << " does not exist!";
                 return EXIT_FAILURE;
+            }
+        }
+        if(*monitorOpt){
+            hashDatabaseStr="../data/example_database.csv";
+            bool hashDatabaseAvailable{};
+            try{
+                hashDatabaseAvailable=std::filesystem::exists(hashDatabaseStr);
+            }catch(std::filesystem::filesystem_error const& ex) {
+                std::string message=std::filesystem::current_path().append("/").append(hashDatabaseStr);
+                std::cerr << "Cannot open default database in: " << message << "\n";
+                std::cerr << "Try to specify database in path: ../data/example_database.csv\n";
+                return EXIT_FAILURE;
+            }
+            hashDatabaseDB = ReadDatabaseToUnorderedSet(hashDatabaseStr);
+            bool quarantineDirExist{};
+            bool quarantineDatabaseExist{};
+            MakeQuarantineDatabaseAvailable();
+            try{
+                quarantineDirExist = std::filesystem::exists(quarantineDir);
+                quarantineDatabaseExist =std::filesystem::exists(quarantineDatabase);
+            }catch(std::filesystem::filesystem_error const& ex) {
+                std::cerr << "Permission denied: "<< hashDatabaseStr<< " and: "<< quarantineDatabase <<" please check permissions\n";
+                return EXIT_FAILURE;
+            }
+            if (quarantineDirExist && quarantineDatabaseExist) {
+                try {
+                    quarantineDatabaseDB = ReadQuarantineDatabase(quarantineDatabase);
+                }catch(std::filesystem::filesystem_error const& ex) {
+                    std::cerr << "Cannot load database from: "<< quarantineDatabase <<" please check permissions\n";
+                    return EXIT_FAILURE;
+                }
+                std::string pathString{};
+                try {
+                    std::filesystem::path path (monitorFileName);
+                    std::string fileName = path.filename();
+                    std::string fullDirectoryPath = std::filesystem::canonical(
+                            path.parent_path());
+                    pathString = fullDirectoryPath + "/" + fileName;        // Creating full path name of given file
+                }
+                catch(std::filesystem::filesystem_error const& ex) {
+                    std::cerr << "Cannot create canonical path of: "<< monitorFileName<< "\n";
+                    return EXIT_FAILURE;
+                }
+                auto thWatcher = std::thread(ThreadsWatcher);
+                auto thMonitor = std::thread(monitorCatalogueTree,pathString);
+                char c;
+                bool check = true;
+                while(check){
+                    while (!TerminateHandler()) {
+                        fflush(stdout);
+                        sleep(1);
+                    }
+                    std::cin.read(&c,sizeof(char));
+                    if (c==27||c==81||c==113){
+                        check=false;
+                    }
+                }
+                std::cout << "\n Safely terminating program\n";
+                loop=false;
+                pathsToAnalyze.enqueue(""); // To avoid stuck in SafeQueue
+                thWatcher.join();
+                thMonitor.join();
+                MakeQuarantineDatabaseUnavailable();
+            }
+            else {
+                std::cerr << "Quarantine database: " << quarantineDatabase << " does not exist!";
+                std::cerr << "Try running antivirus with scan option first";
+                return EXIT_FAILURE;
+            }
+        }
+        if(*VTOpt){
+            std::string pathString{};
+            try {
+                std::filesystem::path path (vtFilename);
+                std::string fileName = path.filename();
+                std::string fullDirectoryPath = std::filesystem::canonical(
+                        path.parent_path());
+                pathString = fullDirectoryPath + "/" + fileName;        // Creating full path name of given file
+            }
+            catch(std::filesystem::filesystem_error const& ex) {
+                std::cerr << "Cannot create canonical path of: "<< vtFilename<< "\n";
+
+                return EXIT_FAILURE;
+            }
+            if(quiet){
+                VirusTotalAnalyzeMultipleFiles(pathString,apiKey,true);
+            }
+            else{
+                VirusTotalAnalyzeMultipleFiles(pathString,apiKey,false);
             }
         }
     }

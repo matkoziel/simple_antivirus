@@ -9,6 +9,8 @@ add_executable(simple_antivirus src/file_functions.cpp headers/file_functions.h 
 target_link_libraries(simple_antivirus ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(simple_antivirus ${CMAKE_SOURCE_DIR}/libs/libcrypto++.a)
 target_link_libraries(simple_antivirus cpprestsdk::cpprest)
-
-
+add_custom_target(setcap ALL
+        WORKING_DIRECTORY ${OUTPUT_DIR}
+        COMMAND ${CMAKE_COMMAND} -E 'sudo setcap CAP_DAC_READ_SEARCH,CAP_DAC_OVERRIDE' ${}<simple_antivirus>)
+add_dependencies(setcap ${simple_antivirus})
 

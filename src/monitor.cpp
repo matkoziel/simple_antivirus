@@ -33,11 +33,28 @@ std::string generateFullPath(struct inotify_event* event, std::unordered_map<int
     return fullPath;
 }
 
-void checkForChanges(std::vector<std::string> &paths, int fileDescriptor, std::unordered_map<int,std::string>& wds) {
-    char buffer[BUF_LEN];
-    int length = read(fileDescriptor, buffer,BUF_LEN);
+int ReadWithTimeout(int fileDescriptor, char *buffer,size_t length){
+    fd_set read_fds, write_fds, except_fds;
+    FD_ZERO(&read_fds);
+    FD_ZERO(&write_fds);
+    FD_ZERO(&except_fds);
+    FD_SET(fileDescriptor, &read_fds);
+    struct timeval timeout{};
+    timeout.tv_sec = 1;
+    timeout.tv_usec = 0;
+    if (select(fileDescriptor + 1, &read_fds, &write_fds, &except_fds, &timeout) == 1)
+    {
+        return read(fileDescriptor, buffer,length);
+    }
+    else
+    {
+        return -1;
+    }
+}
+
+void checkForChanges(std::vector<std::string> &paths, int fileDescriptor, std::unordered_map<int,std::string>& wds,char buffer[],int length) {
     int i{0};
-    while(i<length) { // Reads block until event occurs
+    while(loop && (i<length)) { // Reads block until event occurs
         auto *event = (struct inotify_event*) &buffer[i];
         if (event->len){
             if(event -> mask & IN_ISDIR){
@@ -45,11 +62,6 @@ void checkForChanges(std::vector<std::string> &paths, int fileDescriptor, std::u
                     std::string fullPath = generateFullPath(event,wds);
                     paths.push_back(fullPath);
                     wds.insert(std::pair<int, std::string>(inotify_add_watch(fileDescriptor,fullPath.c_str(),IN_MODIFY | IN_CREATE | IN_DELETE),fullPath));
-                    std::cout << "Created new directory: " <<fullPath <<"\n";
-                }
-                else if (event-> mask & IN_MODIFY){
-                    std::string fullPath = generateFullPath(event,wds);
-                    std::cout << "Modified directory: " <<fullPath <<"\n";
                 }
                 else if (event-> mask & IN_DELETE){
                     std::string fullPath = generateFullPath(event,wds);
@@ -64,26 +76,18 @@ void checkForChanges(std::vector<std::string> &paths, int fileDescriptor, std::u
                         wds.erase(found);
                         inotify_rm_watch(fileDescriptor,found);
                     }
-                    std::cout << "Deleted directory: "<<fullPath <<"\n";
                 }
             }
             else{
                 if (event-> mask & IN_CREATE){
                     std::string fullPath = generateFullPath(event,wds);
-                    std::cout <<"Created new file: " <<fullPath <<"\n";
-//                    auto th = std::thread(AnalyzingFileWithoutFeedback,fullPath);
-//                    th.join();
+                    std::cout << "File created\n";
                     pathsToAnalyze.enqueue(fullPath);
-//                    threads.push_back();
                 }
                 else if (event-> mask & IN_MODIFY){
                     std::string fullPath = generateFullPath(event,wds);
+                    std::cout << "File created\n";
                     pathsToAnalyze.enqueue(fullPath);
-                    std::cout <<"Modified file: " << fullPath <<"\n";
-                }
-                else if (event-> mask & IN_DELETE){
-                    std::string fullPath = generateFullPath(event,wds);
-                    std::cout <<"Deleted file: " << fullPath <<"\n";
                 }
             }
         }
@@ -115,7 +119,11 @@ void monitorCatalogueTree(const std::string& path) {
     }
     std::cout << "Successfully loaded all files\n";
     while(loop) {
-        checkForChanges(paths,fileDescriptor,wds);
+        char buffer[BUF_LEN];
+        int length = ReadWithTimeout(fileDescriptor, buffer,BUF_LEN);
+        if(length!=-1){
+            checkForChanges(paths,fileDescriptor,wds,buffer,length);
+        }
     }
     for (const auto& wd : wds){
         inotify_rm_watch(fileDescriptor,wd.first);

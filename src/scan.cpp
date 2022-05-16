@@ -16,6 +16,7 @@
 
 // Analyze given hash of given path with hashDatabaseDB database and gives feedback
 void AnalyzingFile(const std::string& pathString, std::vector<std::string>& quarantinedList) {
+    if(pathString.empty()) return;
     std::string hash{};
     std::cout << "Analyzing: " << pathString;
     try {
@@ -42,6 +43,7 @@ void AnalyzingFile(const std::string& pathString, std::vector<std::string>& quar
 }
 // Analyze given hash of given path with hashDatabaseDB database and gives feedback
 void AnalyzingFileWithoutFeedback(const std::string& pathString) {
+    if(pathString.empty()) return;
     std::string hash{};
     try {
         hash = MD5FileCryptoPP(pathString);

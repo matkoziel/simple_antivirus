@@ -7,11 +7,7 @@
 
 #include <cpprest/http_client.h>
 
-web::json::value VirusTotalReport(const std::string& apiKey, const std::string& hash);
-
-void AnalyzeWithVTApi(const std::string& apiKey, const std::string& hash);
-
-void VirusTotalAnalyze(const std::string& path,const std::string& apiKey, bool quiet);
+void VirusTotalAnalyzeMultipleFiles(const std::string& path,const std::string& apiKey, bool quiet);
 
 #endif //SIMPLE_ANTIVIRUS_VIRUSTOTAL_API_H
 

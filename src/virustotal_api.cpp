@@ -57,14 +57,64 @@ void AnalyzeWithVTApi(const std::string& apiKey, const std::string& hash){
         }
     }
 }
+void AnalyzeWithVTApiQuiet(const std::string& apiKey, const std::string& hash){
+    web::json::value data = VirusTotalReport(apiKey,hash);
+    if(data.is_null()){
+        std::cout << "Request with bad API Key, try again with proper API Key!\n";
+        return;
+    }
+    if(data[U("response_code")].as_integer()==1){
+        if(data[U("positives")].as_integer()!=0){
+            auto scans = data[U("scans")];
+            GenerateOutput(scans);
+        }
+        else{
+        }
+    }
+    else {
+        if(data[U("verbose_msg")].as_string()=="Invalid resource, check what you are submitting"){
+            std::cout << "Invalid hash, try again\n";
+        }
+    }
+}
+
 void VirusTotalAnalyze(const std::string& path,const std::string& apiKey, bool quiet){
     std::string hash = MD5FileCryptoPP(path);
     std::cout << "Analyzing: " << path<< ", hash : " << hash << "\n";
     if(quiet){
-        //TODO: Add quiet method
+        AnalyzeWithVTApiQuiet(apiKey,hash);
     }
     else{
         AnalyzeWithVTApi(apiKey,hash);
+    }
+}
+
+void VirusTotalAnalyzeMultipleFiles(const std::string& path,const std::string& apiKey, bool quiet){
+    bool isDirectory;
+    try{
+        isDirectory = std::filesystem::is_directory(path);
+    }
+    catch (std::filesystem::filesystem_error const &ex) {
+        std::cerr << "Permission denied\n";
+        return;
+    }
+    if(isDirectory){
+        std::vector<std::string> paths{};
+        for (const std::filesystem::path &directoryIteratorPath : std::filesystem::recursive_directory_iterator(path,std::filesystem::directory_options::skip_permission_denied)) {
+            paths.push_back(directoryIteratorPath.string());
+        }
+        if(paths.size()>100){
+            std::cerr << "API does not accept this amount of requests! Please try with smaller catalogues\n";
+            return;
+        }
+        else{
+            for(const auto& pathItr: paths){
+                VirusTotalAnalyze(pathItr,apiKey,quiet);
+            }
+        }
+    }
+    else{
+        VirusTotalAnalyze(path,apiKey,quiet);
     }
 }
 
