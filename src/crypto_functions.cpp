@@ -4,11 +4,9 @@
 
 #include "../headers/crypto_functions.h"
 
-#include <iomanip>
 #include <iostream>
 
 #include <crypto++/aes.h>
-#include <crypto++/base64.h>
 #include <cryptopp/files.h>
 #include <crypto++/filters.h>
 #include <cryptopp/hex.h>
@@ -17,7 +15,6 @@
 #include <cryptopp/modes.h>
 #include <cryptopp/osrng.h>
 
-#include "../headers/file_functions.h"
 #include "../headers/main.h"
 
 struct QuarantineData;

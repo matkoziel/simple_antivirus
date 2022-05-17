@@ -45,25 +45,29 @@ void TerminateProgram(int inputSignal){
         signal(SIGINT, TerminateProgram);
     }
 }
+// Checks if given thread ended
 bool FutureIsReady(std::future<void>* t){
     return t->wait_for(std::chrono::seconds(0)) == std::future_status::ready;
 }
-
+// Watcher that manages threads
 void ThreadsWatcher(){
     loop=true;
     while(loop){
-        if((threads.size()<=5)&&(loop||!threads.empty())){
-            std::string path = pathsToAnalyze.dequeue();
-            if(threads.find(path)==threads.end()){
-                threads.insert(std::pair<std::string, std::future<void>*>{path,new std::future<void>{std::async(std::launch::async, AnalyzingFileWithoutFeedback,path)}});
+        if((threads.size()<=20)&&(loop||!threads.empty())){         //Limit amount of running threads to 20
+            std::string path = pathsToAnalyze.dequeue();            //Gets path to analyze from safe queue
+            if(threads.find(path)==threads.end()){               //Any of current threads is running with given path
+                threads.insert(std::pair<std::string,            //Add thread to running threads
+                               std::future<void>*>{path,
+                                                   new std::future<void>{std::async(std::launch::async,
+                                                                                    AnalyzingFileWithoutFeedback,path)}});
             }
             else {
-                pathsToAnalyze.enqueue(path);
+                pathsToAnalyze.enqueue(path);                    //If any of given threads is running with given path enqueues path at the end of queue
             }
         }
-        for (auto it = threads.begin();it!=threads.end();){
+        for (auto it = threads.begin();it!=threads.end();){ //Remove thread from running threads if finished
             if(FutureIsReady(it->second)){
-                delete(it->second);
+                delete(it->second);                                     //Clear resources
                 threads.erase(it++);
             }
             else{
@@ -71,7 +75,7 @@ void ThreadsWatcher(){
             }
         }
     }
-    while(!threads.empty()){
+    while(!threads.empty()){                                            //Clear threads queue after finished monitoring
         for (auto it = threads.begin();it!=threads.end();){
             if(FutureIsReady(it->second)){
                 delete(it->second);
@@ -83,6 +87,7 @@ void ThreadsWatcher(){
         }
     }
 }
+//Handles monitor termination
 int TerminateHandler() {
     static bool initflag = false;
     static const int STDIN = 0;
@@ -97,7 +102,7 @@ int TerminateHandler() {
     }
 
     int nbbytes;
-    ioctl(STDIN, FIONREAD, &nbbytes);  // 0 is STDIN
+    ioctl(STDIN, FIONREAD, &nbbytes);
     return nbbytes;
 }
 
@@ -317,7 +322,7 @@ int main(int argc, char **argv) {
             }
         }
         if(*monitorOpt){
-            hashDatabaseStr="../data/example_database.csv";
+            hashDatabaseStr="../data/example_database.csv";           // Works only with standard database
             bool hashDatabaseAvailable{};
             try{
                 hashDatabaseAvailable=std::filesystem::exists(hashDatabaseStr);
@@ -357,24 +362,24 @@ int main(int argc, char **argv) {
                     std::cerr << "Cannot create canonical path of: "<< monitorFileName<< "\n";
                     return EXIT_FAILURE;
                 }
-                auto thWatcher = std::thread(ThreadsWatcher);
-                auto thMonitor = std::thread(MonitorCatalogueTree, pathString);
+                auto thWatcher = std::thread(ThreadsWatcher);                   // Initialize thread with watcher
+                auto thMonitor = std::thread(MonitorCatalogueTree, pathString); // Initialize thread with monitor
                 char c;
                 bool check = true;
-                while(check){
+                while(check){                                                      // Watching for termination key
                     while (!TerminateHandler()) {
                         fflush(stdout);
                         sleep(1);
                     }
                     std::cin.read(&c,sizeof(char));
-                    if (c==27||c==81||c==113){
+                    if (c==27||c==81||c==113){                                      // Terminates if q, Q or Esc
                         check=false;
                     }
                 }
                 std::cout << "\nSafely terminating program\n";
-                loop=false;
-                pathsToAnalyze.enqueue(""); // To avoid stuck in SafeQueue
-                thWatcher.join();
+                loop=false;                                                        // Sets global atomic boolean to finish monitoring
+                pathsToAnalyze.enqueue("");                                     // To avoid stuck in SafeQueue
+                thWatcher.join();                                                  // Waits for thread to finish
                 thMonitor.join();
                 MakeQuarantineDatabaseUnavailable();
             }
@@ -399,7 +404,7 @@ int main(int argc, char **argv) {
                 return EXIT_FAILURE;
             }
             if(quiet){
-                VirusTotalAnalyzeMultipleFiles(pathString,apiKey,true);
+                VirusTotalAnalyzeMultipleFiles(pathString,apiKey,true);     // Analyze with VT API without quiet option
             }
             else{
                 VirusTotalAnalyzeMultipleFiles(pathString,apiKey,false);

@@ -6,7 +6,6 @@
 
 #include <sys/vfs.h>
 
-#include <algorithm>
 #include <ctime>
 #include <filesystem>
 #include <iostream>

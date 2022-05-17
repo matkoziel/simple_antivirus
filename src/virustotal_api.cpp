@@ -11,6 +11,7 @@
 #include "../headers/main.h"
 #include "../headers/file_functions.h"
 
+//Creates API Request and return json object
 web::json::value VirusTotalReport(const std::string& apiKey, const std::string& hash){
     std::string requestUri = "https://www.virustotal.com/vtapi/v2/file/report?apikey=";
     requestUri.append(apiKey);
@@ -24,6 +25,7 @@ web::json::value VirusTotalReport(const std::string& apiKey, const std::string& 
     auto response = client.request(req).get();
     return response.extract_json().get();
 }
+//Generates output if file was considered as malicious
 void GenerateOutput(const web::json::value& scans){
     auto scansMap = scans.as_object();
     std::cout << "File is considered to be malicious by:\n";
@@ -33,6 +35,7 @@ void GenerateOutput(const web::json::value& scans){
         }
     }
 }
+//Analyze given file with VT API
 void AnalyzeWithVTApi(const std::string& apiKey, const std::string& hash,const std::string& path){
     std::cout << "Sending request to VirusTotal API...\n";
     web::json::value data = VirusTotalReport(apiKey,hash);
@@ -59,6 +62,7 @@ void AnalyzeWithVTApi(const std::string& apiKey, const std::string& hash,const s
         }
     }
 }
+// Quiet option of analyzing file with API
 void AnalyzeWithVTApiQuiet(const std::string& apiKey, const std::string& hash){
     web::json::value data = VirusTotalReport(apiKey,hash);
     if(data.is_null()){
@@ -79,7 +83,7 @@ void AnalyzeWithVTApiQuiet(const std::string& apiKey, const std::string& hash){
         }
     }
 }
-
+// Quiet option handling
 void VirusTotalAnalyze(const std::string& path,const std::string& apiKey, bool quiet){
     std::string hash = MD5FileCryptoPP(path);
     std::cout << "Analyzing: " << path<< ", hash : " << hash << "\n";
@@ -90,7 +94,7 @@ void VirusTotalAnalyze(const std::string& path,const std::string& apiKey, bool q
         AnalyzeWithVTApi(apiKey,hash,path);
     }
 }
-
+// Recursively listing files and analyzing them
 void VirusTotalAnalyzeMultipleFiles(const std::string& path,const std::string& apiKey, bool quiet){
     bool isDirectory;
     try{
@@ -105,7 +109,7 @@ void VirusTotalAnalyzeMultipleFiles(const std::string& path,const std::string& a
         for (const std::filesystem::path &directoryIteratorPath : std::filesystem::recursive_directory_iterator(path,std::filesystem::directory_options::skip_permission_denied)) {
             paths.push_back(directoryIteratorPath.string());
         }
-        if(paths.size()>100){
+        if(paths.size()>100){           // Maximum files count accepted by API
             std::cerr << "API does not accept this amount of requests! Please try with smaller catalogues\n";
             return;
         }

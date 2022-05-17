@@ -6,7 +6,6 @@
 
 #include <filesystem>
 #include <string>
-#include <unordered_set>
 #include <vector>
 
 #include <cryptopp/files.h>

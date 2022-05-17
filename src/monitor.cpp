@@ -7,8 +7,6 @@
 #include <sys/inotify.h>
 #include <unistd.h>
 
-#include "../libs/safe_queue.h"
-
 #include <filesystem>
 #include <iostream>
 #include <string>
@@ -17,7 +15,6 @@
 
 #include "../headers/file_functions.h"
 #include "../headers/main.h"
-#include "../headers/scan.h"
 
 #define EVENT_SIZE (sizeof(struct inotify_event))
 #define BUF_LEN (1024 * (EVENT_SIZE + 16))
@@ -25,6 +22,7 @@
 SafeQueue<std::string> pathsToAnalyze;
 std::map<std::string,std::future<void>*> threads;
 
+//Generates full path from given inotify event
 std::string GenerateFullPath(struct inotify_event* event, std::unordered_map<int,std::string>& wds) {
     auto dir = wds.find (event->wd);
     std::string fullPath = dir->second;
@@ -32,7 +30,7 @@ std::string GenerateFullPath(struct inotify_event* event, std::unordered_map<int
     fullPath.append(event->name);
     return fullPath;
 }
-
+//File descriptor read with 1 second timeout if cannot read. Used to avoid stuck in loop.
 int ReadWithTimeout(int fileDescriptor, char *buffer,size_t length){
     fd_set read_fds, write_fds, except_fds;
     FD_ZERO(&read_fds);
@@ -51,19 +49,19 @@ int ReadWithTimeout(int fileDescriptor, char *buffer,size_t length){
         return -1;
     }
 }
-
+// Example inotify module solution, from man inotify
 void CheckForChanges(std::vector<std::string> &paths, int fileDescriptor, std::unordered_map<int,std::string>& wds, char buffer[], int length) {
     int i{0};
     while(loop && (i<length)) { // Reads block until event occurs
         auto *event = (struct inotify_event*) &buffer[i];
         if (event->len){
             if(event -> mask & IN_ISDIR){
-                if (event-> mask & IN_CREATE){
+                if (event-> mask & IN_CREATE){                              //Handling new catalogue
                     std::string fullPath = GenerateFullPath(event, wds);
                     paths.push_back(fullPath);
                     wds.insert(std::pair<int, std::string>(inotify_add_watch(fileDescriptor,fullPath.c_str(),IN_MODIFY | IN_CREATE | IN_DELETE),fullPath));
                 }
-                else if (event-> mask & IN_DELETE){
+                else if (event-> mask & IN_DELETE){                         //Handling deleting catalogue
                     std::string fullPath = GenerateFullPath(event, wds);
                     int found{0};
                     for (auto & wd : wds) {
@@ -79,14 +77,12 @@ void CheckForChanges(std::vector<std::string> &paths, int fileDescriptor, std::u
                 }
             }
             else{
-                if (event-> mask & IN_CREATE){
+                if (event-> mask & IN_CREATE){                                  //File creation action
                     std::string fullPath = GenerateFullPath(event, wds);
-                    std::cout << "File created\n";
                     pathsToAnalyze.enqueue(fullPath);
                 }
-                else if (event-> mask & IN_MODIFY){
+                else if (event-> mask & IN_MODIFY){                             //File modification action
                     std::string fullPath = GenerateFullPath(event, wds);
-                    std::cout << "File created\n";
                     pathsToAnalyze.enqueue(fullPath);
                 }
             }
@@ -94,7 +90,7 @@ void CheckForChanges(std::vector<std::string> &paths, int fileDescriptor, std::u
         i+= EVENT_SIZE + event->len;
     }
 }
-
+//Recursively read given catalogue and monitor all of them
 void MonitorCatalogueTree(const std::string& path) {
     std::vector<std::string> paths{};
     paths.push_back(path);
