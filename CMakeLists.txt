@@ -13,4 +13,8 @@ target_link_libraries(simple_antivirus cpprestsdk::cpprest)
 #        WORKING_DIRECTORY ${OUTPUT_DIR}
 #        COMMAND ${CMAKE_COMMAND} -E 'sudo setcap CAP_DAC_READ_SEARCH,CAP_DAC_OVERRIDE' ${}<simple_antivirus>)
 #add_dependencies(setcap ${simple_antivirus})
+SET(SUDO_COMMAND sudo)
+add_custom_command(TARGET simple_antivirus POST_BUILD
+        COMMAND ${SUDO_COMMAND} setcap CAP_DAC_OVERRIDE+ep simple_antivirus
+        WORKING_DIRECTORY ${EXECUTABLE_OUTPUT_PATH})
 

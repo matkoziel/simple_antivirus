@@ -176,7 +176,7 @@ int main(int argc, char **argv) {
 //            std::unordered_set<std::string> hashDatabase{};
             bool quarantineDirExist{};
             bool quarantineDatabaseExist{};
-            MakeQuarantineDatabaseAvailable();                                                  // Opening database
+//            MakeQuarantineDatabaseAvailable();                                                  // Opening database
             try{
                 quarantineDirExist = std::filesystem::exists(quarantineDir);
                 quarantineDatabaseExist =std::filesystem::exists(quarantineDatabase);
@@ -227,7 +227,7 @@ int main(int argc, char **argv) {
                     std::cerr << "Cannot create directory in: "<< scanFileName<< "\n";
                     return EXIT_FAILURE;
                 }
-                MakeQuarantineDatabaseAvailable();
+//                MakeQuarantineDatabaseAvailable();
                 try{
                     quarantineDirExist = std::filesystem::exists(quarantineDir);
                     quarantineDatabaseExist =std::filesystem::exists(quarantineDatabase);
