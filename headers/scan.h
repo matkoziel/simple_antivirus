@@ -9,7 +9,8 @@
 #include <unordered_set>
 #include <vector>
 
-void Scan(const std::string& path, std::unordered_set<std::string>& hashes, std::vector<std::string>& quarantineDB);
+void Scan(const std::string& path);
 
+void AnalyzingFileWithoutFeedback(const std::string& pathString);
 
 #endif //SIMPLE_ANTIVIRUS_SCAN_H

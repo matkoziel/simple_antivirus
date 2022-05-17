@@ -14,6 +14,8 @@
 
 #include "../headers/data_functions.h"
 
+std::string Base64Encode(const std::string& filePath);
+
 std::string MD5FileCryptoPP(const std::string& path);
 
 QuarantineData EncryptFile(QuarantineData& cryptoData, std::vector<std::string>& database);
